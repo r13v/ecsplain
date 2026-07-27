@@ -1,8 +1,8 @@
 import type { SystemMiddleware } from "ecsplain"
 
-export type SystemTraceOutcome = "success" | "error"
+type SystemTraceOutcome = "success" | "error"
 
-export interface SystemTraceEvent {
+interface SystemTraceEvent {
 	readonly system: string
 	readonly depth: number
 	readonly durationMs: number

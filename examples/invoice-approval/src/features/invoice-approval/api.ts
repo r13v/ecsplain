@@ -2,7 +2,7 @@ import type { InvoiceDto } from "../invoice-workspace"
 
 const fallbackApprovalMessage = "Approval request failed"
 
-export interface InvoiceApprovalErrorResponse {
+interface InvoiceApprovalErrorResponse {
 	readonly message: string
 }
 

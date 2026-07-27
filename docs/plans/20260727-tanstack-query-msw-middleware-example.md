@@ -413,22 +413,22 @@ Completion requires all of the following:
 
 ### Task 10: Verify all acceptance criteria
 
-- [ ] Verify existing `createWorld()` callers compile and behave unchanged.
-- [ ] Verify every middleware contract rule has a unit or public-type test.
-- [ ] Verify the example uses no Query or MSW imports from `src`.
-- [ ] Verify one successful fetch cannot create duplicate ECS entities for the same `InvoiceId`.
-- [ ] Verify background query reconciliation cannot remove review, pending, or error components.
-- [ ] Verify delayed GET and mutation responses cannot regress either Query cache or ECS below the highest accepted invoice version.
-- [ ] Verify every non-2xx API response is checked before success callbacks and the HTTP 409 message reaches the UI.
-- [ ] Verify only one store owns optimistic state.
-- [ ] Verify browser MSW starts before the first API request and rejects unhandled requests.
-- [ ] Run `npm run check`.
-- [ ] Run `npm run typecheck`.
-- [ ] Run `npm test`.
-- [ ] Run `npm run build`.
-- [ ] Run `npm run build:examples`.
-- [ ] Run `npm run knip`.
-- [ ] Run `npm run test:e2e`.
+- [x] Verify existing `createWorld()` callers compile and behave unchanged.
+- [x] Verify every middleware contract rule has a unit or public-type test.
+- [x] Verify the example uses no Query or MSW imports from `src`.
+- [x] Verify one successful fetch cannot create duplicate ECS entities for the same `InvoiceId`.
+- [x] Verify background query reconciliation cannot remove review, pending, or error components.
+- [x] Verify delayed GET and mutation responses cannot regress either Query cache or ECS below the highest accepted invoice version.
+- [x] Verify every non-2xx API response is checked before success callbacks and the HTTP 409 message reaches the UI.
+- [x] Verify only one store owns optimistic state.
+- [x] Verify browser MSW starts before the first API request and rejects unhandled requests.
+- [x] Run `npm run check`.
+- [x] Run `npm run typecheck`.
+- [x] Run `npm test`.
+- [x] Run `npm run build`.
+- [x] Run `npm run build:examples`.
+- [x] Run `npm run knip`.
+- [x] Run `npm run test:e2e`.
 
 ### Task 11: Final documentation state
 
