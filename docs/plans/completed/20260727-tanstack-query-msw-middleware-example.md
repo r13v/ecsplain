@@ -175,29 +175,29 @@ Completion requires all of the following:
 - Modify: `tests/world.test.ts`
 - Modify: `tests/public-types.ts`
 
-- [ ] Add failing tests in `tests/world.test.ts` for middleware registration through `createWorld({ middleware })`.
-- [ ] Add failing tests proving middleware array order is first-registered/outermost and every nested `world.run` traverses the complete chain.
-- [ ] Add failing tests proving the middleware array is snapshotted and direct `set`, `update`, `remove`, `spawn`, and `destroy` calls bypass the chain.
-- [ ] Define execution depth as zero-based: an application entry system has `depth: 0`, and its directly nested system has `depth: 1`.
-- [ ] Add failing tests that the execution context exposes the exact system function reference and the unchanged input value.
-- [ ] Add failing tests that system return values, thrown `Error` instances, and thrown `undefined` cross the middleware chain unchanged.
-- [ ] Add failing tests for middleware that returns normally without `next()`, invokes `next()` twice, returns a value not `Object.is`-equal to the `next()` result, or swallows/replaces an error thrown by `next()`.
-- [ ] Add a test that middleware throwing before `next()` prevents the system from running and propagates that middleware error.
-- [ ] Add a test that middleware throwing after a successful `next()` preserves system writes, flushes subscribers once, and then propagates the middleware error.
-- [ ] Add tests for competing system or middleware and subscriber failures, preserving the current primary-error priority.
-- [ ] Add a test that a failed nested run restores execution depth before the next top-level run.
-- [ ] Keep subscriber notification outside the system middleware boundary; document through a focused test that middleware completion occurs before the outer batch flush.
-- [ ] Add `SystemExecution` with readonly `system`, `input`, and zero-based `depth`.
-- [ ] Add a generic `SystemMiddleware` call signature whose `next` and return value share the same `Output` type.
-- [ ] Add `WorldOptions` with an optional readonly middleware array and change `createWorld()` to `createWorld(options?: WorldOptions)` without breaking no-argument callers.
-- [ ] Snapshot the supplied middleware array when creating the World so later mutation of the caller's array cannot change execution.
-- [ ] Implement one synchronous middleware dispatcher used by every `World.run`; do not route direct `set`, `update`, `remove`, `spawn`, or `destroy` calls through middleware.
-- [ ] Enforce exactly-one `next()` and unchanged result/error at runtime while preserving the original thrown value, including `undefined`.
-- [ ] Preserve the current outer batch flush and error-priority behavior.
-- [ ] Export `SystemExecution`, `SystemMiddleware`, and `WorldOptions` from `src/index.ts`.
-- [ ] Add compile-time examples in `tests/public-types.ts` for valid middleware and `createWorld` options.
-- [ ] Add `@ts-expect-error` coverage for asynchronous middleware and a middleware returning a fixed replacement value.
-- [ ] Run `npx vitest run tests/world.test.ts` and `npm run typecheck`.
+- [x] Add failing tests in `tests/world.test.ts` for middleware registration through `createWorld({ middleware })`.
+- [x] Add failing tests proving middleware array order is first-registered/outermost and every nested `world.run` traverses the complete chain.
+- [x] Add failing tests proving the middleware array is snapshotted and direct `set`, `update`, `remove`, `spawn`, and `destroy` calls bypass the chain.
+- [x] Define execution depth as zero-based: an application entry system has `depth: 0`, and its directly nested system has `depth: 1`.
+- [x] Add failing tests that the execution context exposes the exact system function reference and the unchanged input value.
+- [x] Add failing tests that system return values, thrown `Error` instances, and thrown `undefined` cross the middleware chain unchanged.
+- [x] Add failing tests for middleware that returns normally without `next()`, invokes `next()` twice, returns a value not `Object.is`-equal to the `next()` result, or swallows/replaces an error thrown by `next()`.
+- [x] Add a test that middleware throwing before `next()` prevents the system from running and propagates that middleware error.
+- [x] Add a test that middleware throwing after a successful `next()` preserves system writes, flushes subscribers once, and then propagates the middleware error.
+- [x] Add tests for competing system or middleware and subscriber failures, preserving the current primary-error priority.
+- [x] Add a test that a failed nested run restores execution depth before the next top-level run.
+- [x] Keep subscriber notification outside the system middleware boundary; document through a focused test that middleware completion occurs before the outer batch flush.
+- [x] Add `SystemExecution` with readonly `system`, `input`, and zero-based `depth`.
+- [x] Add a generic `SystemMiddleware` call signature whose `next` and return value share the same `Output` type.
+- [x] Add `WorldOptions` with an optional readonly middleware array and change `createWorld()` to `createWorld(options?: WorldOptions)` without breaking no-argument callers.
+- [x] Snapshot the supplied middleware array when creating the World so later mutation of the caller's array cannot change execution.
+- [x] Implement one synchronous middleware dispatcher used by every `World.run`; do not route direct `set`, `update`, `remove`, `spawn`, or `destroy` calls through middleware.
+- [x] Enforce exactly-one `next()` and unchanged result/error at runtime while preserving the original thrown value, including `undefined`.
+- [x] Preserve the current outer batch flush and error-priority behavior.
+- [x] Export `SystemExecution`, `SystemMiddleware`, and `WorldOptions` from `src/index.ts`.
+- [x] Add compile-time examples in `tests/public-types.ts` for valid middleware and `createWorld` options.
+- [x] Add `@ts-expect-error` coverage for asynchronous middleware and a middleware returning a fixed replacement value.
+- [x] Run `npx vitest run tests/world.test.ts` and `npm run typecheck`.
 
 ### Task 2: Add dependencies, scripts, and the invoice example shell
 
@@ -214,16 +214,16 @@ Completion requires all of the following:
 - Create: `examples/invoice-approval/src/main.tsx`
 - Create: `examples/invoice-approval/src/styles.css`
 
-- [ ] Install exact dev dependencies with `npm install --save-dev --save-exact @tanstack/react-query@5.101.4 msw@2.15.0`.
-- [ ] Add `dev:invoice` using `vite examples/invoice-approval --config vite.config.ts`.
-- [ ] Add `build:invoice` using `vite build examples/invoice-approval --config vite.config.ts`.
-- [ ] Include `build:invoice` in `build:examples`.
-- [ ] Add a third Playwright `webServer` entry on `127.0.0.1:4175` with `--strictPort`.
-- [ ] Generate the MSW worker with `npx msw init examples/invoice-approval/public --save`; retain the generated file unchanged.
-- [ ] Preserve the worker directory recorded by MSW in `package.json`.
-- [ ] Add `"**"` and the force-ignore pattern `"!!examples/invoice-approval/public/mockServiceWorker.js"` to `biome.json` `files.includes` so generated code is not formatted or linted.
-- [ ] Create an accessible HTML root and minimal React entry point that can await MSW startup before rendering.
-- [ ] Run `npm run build:invoice`, `npm run check`, and `npm run typecheck`.
+- [x] Install exact dev dependencies with `npm install --save-dev --save-exact @tanstack/react-query@5.101.4 msw@2.15.0`.
+- [x] Add `dev:invoice` using `vite examples/invoice-approval --config vite.config.ts`.
+- [x] Add `build:invoice` using `vite build examples/invoice-approval --config vite.config.ts`.
+- [x] Include `build:invoice` in `build:examples`.
+- [x] Add a third Playwright `webServer` entry on `127.0.0.1:4175` with `--strictPort`.
+- [x] Generate the MSW worker with `npx msw init examples/invoice-approval/public --save`; retain the generated file unchanged.
+- [x] Preserve the worker directory recorded by MSW in `package.json`.
+- [x] Add `"**"` and the force-ignore pattern `"!!examples/invoice-approval/public/mockServiceWorker.js"` to `biome.json` `files.includes` so generated code is not formatted or linted.
+- [x] Create an accessible HTML root and minimal React entry point that can await MSW startup before rendering.
+- [x] Run `npm run build:invoice`, `npm run check`, and `npm run typecheck`.
 
 ### Task 3: Build monotonic ECS invoice reconciliation
 
@@ -237,18 +237,18 @@ Completion requires all of the following:
 - Create: `examples/invoice-approval/src/features/invoice-workspace/index.ts`
 - Create: `tests/invoice-reconciliation.test.ts`
 
-- [ ] Write failing tests first for initial spawn, update by `InvoiceId`, capability synchronization, duplicate prevention, absent-list-item preservation, and unrelated-component preservation.
-- [ ] Add failing tests proving a lower or equal `version` cannot replace an existing snapshot or its `CanApprove` capability, while a higher `version` updates both together.
-- [ ] Define the server contract `InvoiceDto` with `id`, `number`, `vendor`, `amountCents`, `status`, `version`, and `canApprove`, plus `InvoiceListResponse` with `items`.
-- [ ] Document in the contract that `version` increases for every server-visible change to an invoice.
-- [ ] Define workspace-owned `InvoiceId`, immutable `InvoiceSnapshot`, `CanApprove`, and a reusable query for renderable invoice entities.
-- [ ] Create a unique secondary index for `InvoiceId` during bootstrap and use it for all server-to-entity reconciliation.
-- [ ] Implement public `applyInvoiceSnapshot` to spawn a missing entity, apply an incoming DTO to an existing entity only when its `version` is greater than the stored `InvoiceSnapshot.version`, and return whether it applied the DTO.
-- [ ] Implement `reconcileInvoices` as an explicit entry system that runs `applyInvoiceSnapshot` for each DTO; this is the example's natural nested-system composition for one remote list event.
-- [ ] Update `InvoiceSnapshot` and `CanApprove` as one synchronous system operation for an accepted version.
-- [ ] Limit reconciliation to workspace-owned snapshot and capability components so unrelated components remain untouched.
-- [ ] Do not destroy an entity merely because it is absent from one list response; deletion lifecycle is outside this example.
-- [ ] Run `npx vitest run tests/invoice-reconciliation.test.ts` and `npm run typecheck`.
+- [x] Write failing tests first for initial spawn, update by `InvoiceId`, capability synchronization, duplicate prevention, absent-list-item preservation, and unrelated-component preservation.
+- [x] Add failing tests proving a lower or equal `version` cannot replace an existing snapshot or its `CanApprove` capability, while a higher `version` updates both together.
+- [x] Define the server contract `InvoiceDto` with `id`, `number`, `vendor`, `amountCents`, `status`, `version`, and `canApprove`, plus `InvoiceListResponse` with `items`.
+- [x] Document in the contract that `version` increases for every server-visible change to an invoice.
+- [x] Define workspace-owned `InvoiceId`, immutable `InvoiceSnapshot`, `CanApprove`, and a reusable query for renderable invoice entities.
+- [x] Create a unique secondary index for `InvoiceId` during bootstrap and use it for all server-to-entity reconciliation.
+- [x] Implement public `applyInvoiceSnapshot` to spawn a missing entity, apply an incoming DTO to an existing entity only when its `version` is greater than the stored `InvoiceSnapshot.version`, and return whether it applied the DTO.
+- [x] Implement `reconcileInvoices` as an explicit entry system that runs `applyInvoiceSnapshot` for each DTO; this is the example's natural nested-system composition for one remote list event.
+- [x] Update `InvoiceSnapshot` and `CanApprove` as one synchronous system operation for an accepted version.
+- [x] Limit reconciliation to workspace-owned snapshot and capability components so unrelated components remain untouched.
+- [x] Do not destroy an entity merely because it is absent from one list response; deletion lifecycle is outside this example.
+- [x] Run `npx vitest run tests/invoice-reconciliation.test.ts` and `npm run typecheck`.
 
 ### Task 4: Build the ECS approval workflow
 
@@ -261,20 +261,20 @@ Completion requires all of the following:
 - Create: `examples/invoice-approval/src/features/invoice-approval/index.ts`
 - Create: `tests/invoice-approval-systems.test.ts`
 
-- [ ] Write failing tests first for direct approval, review/confirm/cancel, disabled rollout, missing capability, already-approved invoices, and rejection of a duplicate request while the invoice is pending.
-- [ ] Add failing tests proving approval success clears transient state, delegates to the workspace snapshot system, returns whether the snapshot was applied, and never regresses a newer snapshot.
-- [ ] Add a focused test proving list reconciliation cannot remove `ApprovalReview`, `PendingApproval`, or `ApprovalError`.
-- [ ] Add failing tests proving approval failure clears pending state, preserves the last accepted server snapshot, and attaches the normalized server message.
-- [ ] Define approval-owned `ApprovalEnabled`, `ApprovalVariant`, `ApprovalReview`, `PendingApproval`, and `ApprovalError`.
-- [ ] Store `ApprovalEnabled` and `ApprovalVariant` on the stable workspace entity; use variants `"direct"` and `"review"`.
-- [ ] Implement `requestInvoiceApproval`: validate rollout, capability, current server status, and absence of `PendingApproval`; add pending state and return an approval command for `"direct"`, or add review state for `"review"`.
-- [ ] Implement `confirmInvoiceApprovalReview` and `cancelInvoiceApprovalReview`; confirmation adds pending state and returns the same approval command shape used by the direct path.
-- [ ] Do not introduce a mutation ID: `PendingApproval` prevents a second in-flight request for the same invoice.
-- [ ] Implement `applyInvoiceApprovalSuccess` to validate the returned invoice ID, run workspace-owned `applyInvoiceSnapshot`, clear pending/review/error state, and return `{ applied: boolean }` to the remote adapter.
-- [ ] Implement `applyInvoiceApprovalFailure` to clear pending state, preserve the snapshot, and attach a visible error message.
-- [ ] Keep shared mechanical logic as local helper functions rather than creating single-use systems.
-- [ ] Ensure test names explain why background or mutation responses cannot regress accepted state.
-- [ ] Run `npx vitest run tests/invoice-approval-systems.test.ts` and `npm run typecheck`.
+- [x] Write failing tests first for direct approval, review/confirm/cancel, disabled rollout, missing capability, already-approved invoices, and rejection of a duplicate request while the invoice is pending.
+- [x] Add failing tests proving approval success clears transient state, delegates to the workspace snapshot system, returns whether the snapshot was applied, and never regresses a newer snapshot.
+- [x] Add a focused test proving list reconciliation cannot remove `ApprovalReview`, `PendingApproval`, or `ApprovalError`.
+- [x] Add failing tests proving approval failure clears pending state, preserves the last accepted server snapshot, and attaches the normalized server message.
+- [x] Define approval-owned `ApprovalEnabled`, `ApprovalVariant`, `ApprovalReview`, `PendingApproval`, and `ApprovalError`.
+- [x] Store `ApprovalEnabled` and `ApprovalVariant` on the stable workspace entity; use variants `"direct"` and `"review"`.
+- [x] Implement `requestInvoiceApproval`: validate rollout, capability, current server status, and absence of `PendingApproval`; add pending state and return an approval command for `"direct"`, or add review state for `"review"`.
+- [x] Implement `confirmInvoiceApprovalReview` and `cancelInvoiceApprovalReview`; confirmation adds pending state and returns the same approval command shape used by the direct path.
+- [x] Do not introduce a mutation ID: `PendingApproval` prevents a second in-flight request for the same invoice.
+- [x] Implement `applyInvoiceApprovalSuccess` to validate the returned invoice ID, run workspace-owned `applyInvoiceSnapshot`, clear pending/review/error state, and return `{ applied: boolean }` to the remote adapter.
+- [x] Implement `applyInvoiceApprovalFailure` to clear pending state, preserve the snapshot, and attach a visible error message.
+- [x] Keep shared mechanical logic as local helper functions rather than creating single-use systems.
+- [x] Ensure test names explain why background or mutation responses cannot regress accepted state.
+- [x] Run `npx vitest run tests/invoice-approval-systems.test.ts` and `npm run typecheck`.
 
 ### Task 5: Add the Query/MSW list boundary and scoped bridge
 
@@ -290,21 +290,21 @@ Completion requires all of the following:
 - Create: `examples/invoice-approval/src/mocks/browser.ts`
 - Create: `tests/invoice-query-bridge.test.ts`
 
-- [ ] Write integration tests first with `setupServer`, an explicit `http://invoice.test/api/` base URL, a fresh store per test, and `retry: false`.
-- [ ] Add failing tests proving two query-specific observers cause one actual GET, a newer cache result reaches ECS, transient ECS state survives, and two different `setQueryData` values applied in the same tick are both considered rather than deduplicated by timestamp.
-- [ ] Define `createInvoiceApi(baseUrl: URL)` and build request URLs with `new URL(...)`; browser composition passes `new URL("/api/", window.location.origin)` and Vitest passes `new URL("http://invoice.test/api/")`.
-- [ ] Define the query key as `["invoices"]` and export typed query options with `staleTime: 30_000` and `retry: false`.
-- [ ] Pass the query function's TanStack Query `signal` into `fetch`, check `response.ok`, and parse the successful `InvoiceListResponse`.
-- [ ] Implement `startInvoiceQueryBridge` with a query-specific `QueryObserver`, not a subscription to the entire `QueryCache`.
-- [ ] Reconcile only successful results and compare the `data` reference with the last applied reference; do not use `dataUpdatedAt` as the deduplication identity.
-- [ ] Rely on monotonic `reconcileInvoices` as the final idempotency and stale-version guard.
-- [ ] Return an unsubscribe function from the bridge and dispose it on page teardown.
-- [ ] Keep the UI observer and bridge on the exact same query options object so TanStack Query deduplicates their HTTP request.
-- [ ] Implement a fresh in-memory mock invoice store factory so browser and tests do not leak mutable state across runs.
-- [ ] Add an MSW `GET /api/invoices` handler returning three stable invoices after an explicit `150 ms` delay.
-- [ ] Make the handler factory accept the API base URL and reuse it with `setupWorker` and `setupServer`; use `http`, `HttpResponse`, and `delay` from MSW 2.
-- [ ] Start and close `setupServer` in the test lifecycle and reset handler/store state between tests.
-- [ ] Run `npx vitest run tests/invoice-query-bridge.test.ts`, `npm run typecheck`, and `npm run build:invoice`.
+- [x] Write integration tests first with `setupServer`, an explicit `http://invoice.test/api/` base URL, a fresh store per test, and `retry: false`.
+- [x] Add failing tests proving two query-specific observers cause one actual GET, a newer cache result reaches ECS, transient ECS state survives, and two different `setQueryData` values applied in the same tick are both considered rather than deduplicated by timestamp.
+- [x] Define `createInvoiceApi(baseUrl: URL)` and build request URLs with `new URL(...)`; browser composition passes `new URL("/api/", window.location.origin)` and Vitest passes `new URL("http://invoice.test/api/")`.
+- [x] Define the query key as `["invoices"]` and export typed query options with `staleTime: 30_000` and `retry: false`.
+- [x] Pass the query function's TanStack Query `signal` into `fetch`, check `response.ok`, and parse the successful `InvoiceListResponse`.
+- [x] Implement `startInvoiceQueryBridge` with a query-specific `QueryObserver`, not a subscription to the entire `QueryCache`.
+- [x] Reconcile only successful results and compare the `data` reference with the last applied reference; do not use `dataUpdatedAt` as the deduplication identity.
+- [x] Rely on monotonic `reconcileInvoices` as the final idempotency and stale-version guard.
+- [x] Return an unsubscribe function from the bridge and dispose it on page teardown.
+- [x] Keep the UI observer and bridge on the exact same query options object so TanStack Query deduplicates their HTTP request.
+- [x] Implement a fresh in-memory mock invoice store factory so browser and tests do not leak mutable state across runs.
+- [x] Add an MSW `GET /api/invoices` handler returning three stable invoices after an explicit `150 ms` delay.
+- [x] Make the handler factory accept the API base URL and reuse it with `setupWorker` and `setupServer`; use `http`, `HttpResponse`, and `delay` from MSW 2.
+- [x] Start and close `setupServer` in the test lifecycle and reset handler/store state between tests.
+- [x] Run `npx vitest run tests/invoice-query-bridge.test.ts`, `npm run typecheck`, and `npm run build:invoice`.
 
 ### Task 6: Add the approval mutation adapter and race coverage
 
@@ -319,18 +319,18 @@ Completion requires all of the following:
 - Modify: `examples/invoice-approval/src/mocks/handlers.ts`
 - Create: `tests/invoice-approval-mutation.test.ts`
 
-- [ ] Write integration tests first for successful approval, HTTP 409 rejection, a stale successful DTO, and a GET started before approval that is aborted and cannot overwrite the POST result.
-- [ ] Define `createInvoiceApprovalApi(baseUrl: URL)`, a typed `InvoiceApprovalErrorResponse` with `message`, and an `InvoiceApiError` carrying the HTTP status and normalized message in the approval slice.
-- [ ] Implement the approval POST with the explicit API base URL, check `response.ok`, parse the success DTO, and throw `InvoiceApiError` for non-2xx responses including the MSW 409 body.
-- [ ] Before starting POST, await `queryClient.cancelQueries({ queryKey: invoiceQueryKey })`; consuming the query signal in Task 5 must abort an older GET rather than merely ignoring its result.
-- [ ] On success, run `applyInvoiceApprovalSuccess` first.
-- [ ] Update Query cache only when the ECS system returns `applied: true`, and use an immutable version-aware merge that never replaces a cached invoice with a lower or equal version.
-- [ ] Invalidate `["invoices"]` after every success for background verification, including a stale success that was not applied.
-- [ ] On error, run `applyInvoiceApprovalFailure` with `InvoiceApiError.message` or the fallback `"Approval request failed"` for unknown/network errors, then invalidate the query without applying an optimistic Query-cache value.
-- [ ] Ensure ECS alone owns and renders optimistic pending state; do not add Query-cache optimistic state or rollback.
-- [ ] Extend the shared MSW factory with an approval handler delayed by exactly `250 ms`: approve the first pending invoice by incrementing its version and removing capability, return typed HTTP 409 for the second, and keep the third already approved.
-- [ ] Assert UI state transitions or deferred request resolution in tests; do not assert elapsed milliseconds.
-- [ ] Run `npx vitest run tests/invoice-approval-mutation.test.ts`, `npm run typecheck`, and `npm run build:invoice`.
+- [x] Write integration tests first for successful approval, HTTP 409 rejection, a stale successful DTO, and a GET started before approval that is aborted and cannot overwrite the POST result.
+- [x] Define `createInvoiceApprovalApi(baseUrl: URL)`, a typed `InvoiceApprovalErrorResponse` with `message`, and an `InvoiceApiError` carrying the HTTP status and normalized message in the approval slice.
+- [x] Implement the approval POST with the explicit API base URL, check `response.ok`, parse the success DTO, and throw `InvoiceApiError` for non-2xx responses including the MSW 409 body.
+- [x] Before starting POST, await `queryClient.cancelQueries({ queryKey: invoiceQueryKey })`; consuming the query signal in Task 5 must abort an older GET rather than merely ignoring its result.
+- [x] On success, run `applyInvoiceApprovalSuccess` first.
+- [x] Update Query cache only when the ECS system returns `applied: true`, and use an immutable version-aware merge that never replaces a cached invoice with a lower or equal version.
+- [x] Invalidate `["invoices"]` after every success for background verification, including a stale success that was not applied.
+- [x] On error, run `applyInvoiceApprovalFailure` with `InvoiceApiError.message` or the fallback `"Approval request failed"` for unknown/network errors, then invalidate the query without applying an optimistic Query-cache value.
+- [x] Ensure ECS alone owns and renders optimistic pending state; do not add Query-cache optimistic state or rollback.
+- [x] Extend the shared MSW factory with an approval handler delayed by exactly `250 ms`: approve the first pending invoice by incrementing its version and removing capability, return typed HTTP 409 for the second, and keep the third already approved.
+- [x] Assert UI state transitions or deferred request resolution in tests; do not assert elapsed milliseconds.
+- [x] Run `npx vitest run tests/invoice-approval-mutation.test.ts`, `npm run typecheck`, and `npm run build:invoice`.
 
 ### Task 7: Compose the application and tracing middleware
 
@@ -344,21 +344,21 @@ Completion requires all of the following:
 - Modify: `examples/invoice-approval/src/main.tsx`
 - Create: `tests/invoice-example-bootstrap.test.ts`
 
-- [ ] Write focused tests first for default, review, and disabled URL configuration plus tracing success/error behavior without logging middleware input.
-- [ ] Parse session-fixed configuration before World creation:
+- [x] Write focused tests first for default, review, and disabled URL configuration plus tracing success/error behavior without logging middleware input.
+- [x] Parse session-fixed configuration before World creation:
   - Default: approval enabled with `"direct"` variant.
   - `?variant=review`: approval enabled with `"review"` variant.
   - `?approval=off`: approval disabled and workspace read-only.
-- [ ] Create the workspace entity and attach feature configuration in `create-example.ts`; no feature slice reads URL globals directly.
-- [ ] Create one QueryClient, one World, one unique `InvoiceId` index, one query-options object, one query bridge, and one disposal function.
-- [ ] Pass the browser origin-derived API base URL to both slice API clients and the same base URL to the MSW handler factory.
-- [ ] Start the browser worker with `onUnhandledRequest: "error"` before creating observers or rendering.
-- [ ] Keep QueryClient, World, and the query bridge outside React `StrictMode` so StrictMode cannot recreate them.
-- [ ] Dispose the query bridge and clear the QueryClient on page teardown.
-- [ ] Add tracing middleware that records diagnostic function name, zero-based depth, elapsed duration, and success/error outcome through `console.info`.
-- [ ] Never log middleware input because it may contain invoice data or other sensitive values.
-- [ ] Return the exact `next()` result and rethrow the exact original error; nested-depth behavior remains a core unit-test contract rather than an application composition requirement.
-- [ ] Run `npx vitest run tests/invoice-example-bootstrap.test.ts`, `npm run typecheck`, and `npm run build:invoice`.
+- [x] Create the workspace entity and attach feature configuration in `create-example.ts`; no feature slice reads URL globals directly.
+- [x] Create one QueryClient, one World, one unique `InvoiceId` index, one query-options object, one query bridge, and one disposal function.
+- [x] Pass the browser origin-derived API base URL to both slice API clients and the same base URL to the MSW handler factory.
+- [x] Start the browser worker with `onUnhandledRequest: "error"` before creating observers or rendering.
+- [x] Keep QueryClient, World, and the query bridge outside React `StrictMode` so StrictMode cannot recreate them.
+- [x] Dispose the query bridge and clear the QueryClient on page teardown.
+- [x] Add tracing middleware that records diagnostic function name, zero-based depth, elapsed duration, and success/error outcome through `console.info`.
+- [x] Never log middleware input because it may contain invoice data or other sensitive values.
+- [x] Return the exact `next()` result and rethrow the exact original error; nested-depth behavior remains a core unit-test contract rather than an application composition requirement.
+- [x] Run `npx vitest run tests/invoice-example-bootstrap.test.ts`, `npm run typecheck`, and `npm run build:invoice`.
 
 ### Task 8: Build the UI and browser acceptance coverage
 
@@ -372,23 +372,23 @@ Completion requires all of the following:
 - Modify: `examples/invoice-approval/src/styles.css`
 - Create: `e2e/invoice-approval.spec.ts`
 
-- [ ] Write the Playwright scenarios first against the acceptance behavior below, then implement the UI until they pass.
-- [ ] Render Query-owned initial loading, error, and background-refresh status while keeping cached ECS rows visible during refresh.
-- [ ] Add a manual refresh control that calls `queryClient.invalidateQueries({ queryKey: invoiceQueryKey })`.
-- [ ] Render ECS-owned server snapshots, approval capability, review prompt, pending indicator, and approval error per entity.
-- [ ] In the direct variant, pass the command returned by the first ECS approval action to the mutation adapter.
-- [ ] In the review variant, require explicit confirmation, support cancel, and pass only the confirmation command to the mutation adapter.
-- [ ] In the disabled variant, render no approval actions and explain that rollout configuration disabled the feature.
-- [ ] Keep React handlers thin: translate interaction into ECS system input and pass returned commands to the adapter.
-- [ ] Provide accessible headings, buttons, status messages, alerts, and stable test IDs only where role/name queries are insufficient.
-- [ ] Verify initial loading resolves into the three MSW-backed invoices.
-- [ ] Verify manual refresh shows background activity while cached invoice rows remain visible.
-- [ ] Verify successful direct approval immediately shows ECS pending state, then renders the approved server response and removes the approval action.
-- [ ] Verify HTTP 409 clears pending state, keeps the prior snapshot, and renders the server message as an alert.
-- [ ] Verify `?variant=review` opens review state first, cancel restores idle state, and confirmation starts mutation.
-- [ ] Verify `?approval=off` loads the same server data with no approval controls.
-- [ ] Capture browser console output and assert a real approval entry system emits a successful trace with `depth: 0`; do not require artificial nesting or assert timing values.
-- [ ] Run `npm run build:invoice`, `npm run check`, `npm run typecheck`, and `npx playwright test e2e/invoice-approval.spec.ts`.
+- [x] Write the Playwright scenarios first against the acceptance behavior below, then implement the UI until they pass.
+- [x] Render Query-owned initial loading, error, and background-refresh status while keeping cached ECS rows visible during refresh.
+- [x] Add a manual refresh control that calls `queryClient.invalidateQueries({ queryKey: invoiceQueryKey })`.
+- [x] Render ECS-owned server snapshots, approval capability, review prompt, pending indicator, and approval error per entity.
+- [x] In the direct variant, pass the command returned by the first ECS approval action to the mutation adapter.
+- [x] In the review variant, require explicit confirmation, support cancel, and pass only the confirmation command to the mutation adapter.
+- [x] In the disabled variant, render no approval actions and explain that rollout configuration disabled the feature.
+- [x] Keep React handlers thin: translate interaction into ECS system input and pass returned commands to the adapter.
+- [x] Provide accessible headings, buttons, status messages, alerts, and stable test IDs only where role/name queries are insufficient.
+- [x] Verify initial loading resolves into the three MSW-backed invoices.
+- [x] Verify manual refresh shows background activity while cached invoice rows remain visible.
+- [x] Verify successful direct approval immediately shows ECS pending state, then renders the approved server response and removes the approval action.
+- [x] Verify HTTP 409 clears pending state, keeps the prior snapshot, and renders the server message as an alert.
+- [x] Verify `?variant=review` opens review state first, cancel restores idle state, and confirmation starts mutation.
+- [x] Verify `?approval=off` loads the same server data with no approval controls.
+- [x] Capture browser console output and assert a real approval entry system emits a successful trace with `depth: 0`; do not require artificial nesting or assert timing values.
+- [x] Run `npm run build:invoice`, `npm run check`, `npm run typecheck`, and `npx playwright test e2e/invoice-approval.spec.ts`.
 
 ### Task 9: Document the public contract and runnable architecture
 
@@ -401,40 +401,40 @@ Completion requires all of the following:
 - Modify: `README.md`
 - Modify: `docs/tutorial.md`
 
-- [ ] Record in ADR 0003 why observing middleware was selected over controlling middleware and read-only completion hooks.
-- [ ] Document zero-based depth, array order, nested execution, exactly-once `next`, unchanged result/error, synchronous execution, and the fact that subscriber notification is outside the system middleware boundary.
-- [ ] Warn that `Function.name` is diagnostic only and middleware should not log raw input by default.
-- [ ] Add `dev:invoice` to the root example commands and describe the third runnable example.
-- [ ] Explain the vertical-slice structure and dependency direction in the example README.
-- [ ] Explain the Query/ECS ownership table, QueryObserver bridge, monotonic-version and query-cancellation rules, typed API errors, optimistic ownership rule, MSW endpoints, refresh behavior, feature URL parameters, and tracing middleware.
-- [ ] Extend the async-data portion of `docs/tutorial.md` with a concise link to the runnable invoice example instead of duplicating its entire README.
-- [ ] Update the deliberate limits to state that middleware observes explicitly-run systems and does not introduce scheduling, async systems, side-effect orchestration, or rollback.
-- [ ] Run `npm run check` and manually verify every new relative documentation link.
+- [x] Record in ADR 0003 why observing middleware was selected over controlling middleware and read-only completion hooks.
+- [x] Document zero-based depth, array order, nested execution, exactly-once `next`, unchanged result/error, synchronous execution, and the fact that subscriber notification is outside the system middleware boundary.
+- [x] Warn that `Function.name` is diagnostic only and middleware should not log raw input by default.
+- [x] Add `dev:invoice` to the root example commands and describe the third runnable example.
+- [x] Explain the vertical-slice structure and dependency direction in the example README.
+- [x] Explain the Query/ECS ownership table, QueryObserver bridge, monotonic-version and query-cancellation rules, typed API errors, optimistic ownership rule, MSW endpoints, refresh behavior, feature URL parameters, and tracing middleware.
+- [x] Extend the async-data portion of `docs/tutorial.md` with a concise link to the runnable invoice example instead of duplicating its entire README.
+- [x] Update the deliberate limits to state that middleware observes explicitly-run systems and does not introduce scheduling, async systems, side-effect orchestration, or rollback.
+- [x] Run `npm run check` and manually verify every new relative documentation link.
 
 ### Task 10: Verify all acceptance criteria
 
-- [ ] Verify existing `createWorld()` callers compile and behave unchanged.
-- [ ] Verify every middleware contract rule has a unit or public-type test.
-- [ ] Verify the example uses no Query or MSW imports from `src`.
-- [ ] Verify one successful fetch cannot create duplicate ECS entities for the same `InvoiceId`.
-- [ ] Verify background query reconciliation cannot remove review, pending, or error components.
-- [ ] Verify delayed GET and mutation responses cannot regress either Query cache or ECS below the highest accepted invoice version.
-- [ ] Verify every non-2xx API response is checked before success callbacks and the HTTP 409 message reaches the UI.
-- [ ] Verify only one store owns optimistic state.
-- [ ] Verify browser MSW starts before the first API request and rejects unhandled requests.
-- [ ] Run `npm run check`.
-- [ ] Run `npm run typecheck`.
-- [ ] Run `npm test`.
-- [ ] Run `npm run build`.
-- [ ] Run `npm run build:examples`.
-- [ ] Run `npm run knip`.
-- [ ] Run `npm run test:e2e`.
+- [x] Verify existing `createWorld()` callers compile and behave unchanged.
+- [x] Verify every middleware contract rule has a unit or public-type test.
+- [x] Verify the example uses no Query or MSW imports from `src`.
+- [x] Verify one successful fetch cannot create duplicate ECS entities for the same `InvoiceId`.
+- [x] Verify background query reconciliation cannot remove review, pending, or error components.
+- [x] Verify delayed GET and mutation responses cannot regress either Query cache or ECS below the highest accepted invoice version.
+- [x] Verify every non-2xx API response is checked before success callbacks and the HTTP 409 message reaches the UI.
+- [x] Verify only one store owns optimistic state.
+- [x] Verify browser MSW starts before the first API request and rejects unhandled requests.
+- [x] Run `npm run check`.
+- [x] Run `npm run typecheck`.
+- [x] Run `npm test`.
+- [x] Run `npm run build`.
+- [x] Run `npm run build:examples`.
+- [x] Run `npm run knip`.
+- [x] Run `npm run test:e2e`.
 
 ### Task 11: Final documentation state
 
-- [ ] Update this plan with any scope changes discovered during implementation.
-- [ ] Mark every completed task immediately after its validation command passes.
-- [ ] Move this file to `docs/plans/completed/20260727-tanstack-query-msw-middleware-example.md` only after all acceptance criteria pass.
+- [x] Update this plan with any scope changes discovered during implementation. (No additional scope changes discovered in the final pass.)
+- [x] Mark every completed task immediately after its validation command passes.
+- [x] Move this file to `docs/plans/completed/20260727-tanstack-query-msw-middleware-example.md` only after all acceptance criteria pass.
 
 ## Technical Details
 

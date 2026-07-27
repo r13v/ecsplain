@@ -5,6 +5,9 @@ import {
 	type Entity,
 	optional,
 	type System,
+	type SystemExecution,
+	type SystemMiddleware,
+	type WorldOptions,
 	without,
 } from "ecsplain"
 
@@ -51,6 +54,47 @@ const move: System<{ entity: Entity; x: number }> = (currentWorld, input) => {
 }
 
 world.run(move, { entity, x: 4 })
+
+const traceMiddleware: SystemMiddleware = <Input, Output>(
+	execution: SystemExecution<Input>,
+	next: () => Output,
+): Output => {
+	const systemName: string = execution.system.name
+	const input: Input = execution.input
+	const depth: number = execution.depth
+
+	// @ts-expect-error System identity is not callable from middleware.
+	execution.system()
+	// @ts-expect-error Execution system identity is readonly.
+	execution.system = { name: "otherSystem" }
+	// @ts-expect-error Execution input is readonly.
+	execution.input = input
+	// @ts-expect-error Execution depth is readonly.
+	execution.depth = depth
+
+	void systemName
+	void input
+	void depth
+
+	return next()
+}
+
+const worldOptions: WorldOptions = { middleware: [traceMiddleware] }
+const observedWorld = createWorld(worldOptions)
+observedWorld.run(move, { entity, x: 5 })
+const readonlyMiddleware: readonly SystemMiddleware[] = [traceMiddleware]
+const readonlyWorldOptions: WorldOptions = { middleware: readonlyMiddleware }
+const readonlyObservedWorld = createWorld(readonlyWorldOptions)
+readonlyObservedWorld.run(move, { entity, x: 6 })
+
+// @ts-expect-error Middleware must be synchronous.
+const asyncMiddleware: SystemMiddleware = async (_execution, next) => next()
+
+// @ts-expect-error Middleware must return the value from next().
+const replacementMiddleware: SystemMiddleware = () => "replacement"
+
+void asyncMiddleware
+void replacementMiddleware
 
 // @ts-expect-error A query must request at least one component.
 world.query()

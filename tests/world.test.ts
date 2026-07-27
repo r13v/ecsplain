@@ -5,6 +5,7 @@ import {
 	type Entity,
 	optional,
 	type System,
+	type SystemMiddleware,
 	without,
 } from "ecsplain"
 import { describe, expect, it, vi } from "vitest"
@@ -271,6 +272,384 @@ describe("secondary indexes", () => {
 		expect(() => world.index(ExternalId, { unique: true })).toThrow(
 			'Component "ExternalId" already indexes value for entity',
 		)
+	})
+})
+
+describe("system middleware", () => {
+	it("runs registered middleware around every system in outermost order", () => {
+		const events: string[] = []
+		const first: SystemMiddleware = (execution, next) => {
+			events.push(`first before ${execution.depth}`)
+			const result = next()
+			events.push(`first after ${execution.depth}`)
+			return result
+		}
+		const second: SystemMiddleware = (execution, next) => {
+			events.push(`second before ${execution.depth}`)
+			const result = next()
+			events.push(`second after ${execution.depth}`)
+			return result
+		}
+		const world = createWorld({ middleware: [first, second] })
+		const nested: System<void, string> = () => {
+			events.push("nested system")
+			return "nested result"
+		}
+		const outer: System<{ readonly label: string }, string> = (
+			currentWorld,
+			input,
+		) => {
+			events.push(`outer system ${input.label}`)
+			expect(currentWorld.run(nested)).toBe("nested result")
+			return "outer result"
+		}
+
+		expect(world.run(outer, { label: "input" })).toBe("outer result")
+
+		expect(events).toEqual([
+			"first before 0",
+			"second before 0",
+			"outer system input",
+			"first before 1",
+			"second before 1",
+			"nested system",
+			"second after 1",
+			"first after 1",
+			"second after 0",
+			"first after 0",
+		])
+	})
+
+	it("snapshots middleware and bypasses it for direct world mutations", () => {
+		const events: string[] = []
+		const original: SystemMiddleware = (_execution, next) => {
+			events.push("original")
+			return next()
+		}
+		const addedLater: SystemMiddleware = (_execution, next) => {
+			events.push("added later")
+			return next()
+		}
+		const middleware = [original]
+		const world = createWorld({ middleware })
+		middleware.push(addedLater)
+		const entity = world.create()
+
+		world.set(entity, Count, 1)
+		world.update(entity, Count, current => current + 1)
+		world.remove(entity, Count)
+		const spawned = world.spawn([Count, 3])
+		world.destroy(spawned)
+
+		expect(events).toEqual([])
+
+		world.run(() => undefined)
+
+		expect(events).toEqual(["original"])
+	})
+
+	it("exposes the exact system function reference and input value", () => {
+		const seen: Array<{
+			readonly system: unknown
+			readonly input: unknown
+			readonly depth: number
+		}> = []
+		const middleware: SystemMiddleware = (execution, next) => {
+			seen.push({
+				system: execution.system,
+				input: execution.input,
+				depth: execution.depth,
+			})
+			return next()
+		}
+		const world = createWorld({ middleware: [middleware] })
+		const entity = world.create()
+		const input = { entity }
+		const system: System<typeof input, Entity> = (
+			_currentWorld,
+			currentInput,
+		) => currentInput.entity
+
+		expect(world.run(system, input)).toBe(entity)
+		expect(seen).toEqual([{ system, input, depth: 0 }])
+	})
+
+	it("prevents runtime execution context mutation from replacing input or metadata", () => {
+		const input = { label: "original" }
+		const replacement = { label: "replacement" }
+		const seen: Array<{
+			readonly system: unknown
+			readonly input: unknown
+			readonly depth: number
+		}> = []
+		const mutatesExecution: SystemMiddleware = (execution, next) => {
+			expect(Object.isFrozen(execution)).toBe(true)
+
+			try {
+				;(execution as { input: typeof replacement }).input = replacement
+			} catch {}
+			try {
+				;(execution as { system: unknown }).system = { name: "replacement" }
+			} catch {}
+			try {
+				;(execution as { depth: number }).depth = 99
+			} catch {}
+
+			return next()
+		}
+		const observesExecution: SystemMiddleware = (execution, next) => {
+			seen.push({
+				system: execution.system,
+				input: execution.input,
+				depth: execution.depth,
+			})
+			return next()
+		}
+		const world = createWorld({
+			middleware: [mutatesExecution, observesExecution],
+		})
+		const system: System<typeof input, string> = (
+			_currentWorld,
+			currentInput,
+		) => currentInput.label
+
+		expect(world.run(system, input)).toBe("original")
+		expect(seen).toEqual([{ system, input, depth: 0 }])
+	})
+
+	it("preserves return values and thrown values across middleware", () => {
+		const middleware: SystemMiddleware = (_execution, next) => next()
+		const world = createWorld({ middleware: [middleware] })
+		const result = { ok: true }
+		const error = new Error("system failed")
+
+		expect(world.run(() => result)).toBe(result)
+
+		const thrownError = captureThrown(() => {
+			world.run(() => {
+				throw error
+			})
+		})
+		expect(thrownError.threw).toBe(true)
+		expect(thrownError.value).toBe(error)
+
+		expect(
+			captureThrown(() =>
+				world.run(() => {
+					throw undefined
+				}),
+			),
+		).toEqual({ threw: true, value: undefined })
+	})
+
+	it("rejects middleware that skips next, calls next twice, or changes outcomes", () => {
+		const skipNext = (() => undefined) as SystemMiddleware
+		expect(() =>
+			createWorld({ middleware: [skipNext] }).run(() => "value"),
+		).toThrow("System middleware must call next() exactly once")
+
+		const callsNextTwice = ((_execution, next) => {
+			next()
+			return next()
+		}) as SystemMiddleware
+		let systemCalls = 0
+		expect(() =>
+			createWorld({ middleware: [callsNextTwice] }).run(() => {
+				systemCalls += 1
+				return "value"
+			}),
+		).toThrow("System middleware must call next() exactly once")
+		expect(systemCalls).toBe(1)
+
+		const replacesResult = ((_execution, next) => {
+			next()
+			return "replacement"
+		}) as SystemMiddleware
+		expect(() =>
+			createWorld({ middleware: [replacesResult] }).run(() => "value"),
+		).toThrow("System middleware must return the next() result unchanged")
+
+		const systemError = new Error("system failed")
+		const middlewareError = new Error("middleware failed")
+		const replacesError = ((_execution, next) => {
+			try {
+				return next()
+			} catch {
+				throw middlewareError
+			}
+		}) as SystemMiddleware
+		const replacedError = captureThrown(() =>
+			createWorld({ middleware: [replacesError] }).run(() => {
+				throw systemError
+			}),
+		)
+		expect(replacedError.threw).toBe(true)
+		expect(replacedError.value).toBe(systemError)
+
+		const swallowsUndefined = ((_execution, next) => {
+			try {
+				return next()
+			} catch {
+				return undefined
+			}
+		}) as SystemMiddleware
+		expect(
+			captureThrown(() =>
+				createWorld({ middleware: [swallowsUndefined] }).run(() => {
+					throw undefined
+				}),
+			),
+		).toEqual({ threw: true, value: undefined })
+	})
+
+	it("rejects next calls deferred beyond the synchronous middleware frame", () => {
+		let deferredNext: (() => unknown) | undefined
+		const middleware = ((_execution, next) => {
+			deferredNext = next
+			return undefined
+		}) as SystemMiddleware
+		const world = createWorld({ middleware: [middleware] })
+		let systemCalls = 0
+
+		expect(() =>
+			world.run(() => {
+				systemCalls += 1
+				return "value"
+			}),
+		).toThrow("System middleware must call next() exactly once")
+		expect(systemCalls).toBe(0)
+		expect(() => deferredNext?.()).toThrow(
+			"System middleware must call next() synchronously",
+		)
+		expect(systemCalls).toBe(0)
+	})
+
+	it("propagates middleware thrown before next without running the system", () => {
+		const error = new Error("middleware failed")
+		const system = vi.fn()
+		const middleware = (() => {
+			throw error
+		}) as SystemMiddleware
+
+		const thrown = captureThrown(() =>
+			createWorld({ middleware: [middleware] }).run(system),
+		)
+
+		expect(thrown.threw).toBe(true)
+		expect(thrown.value).toBe(error)
+		expect(system).not.toHaveBeenCalled()
+	})
+
+	it("commits writes and flushes once when middleware throws after next", () => {
+		const error = new Error("middleware failed")
+		const middleware = ((_execution, next) => {
+			next()
+			throw error
+		}) as SystemMiddleware
+		const world = createWorld({ middleware: [middleware] })
+		const entity = world.create()
+		const listener = vi.fn()
+		world.subscribe(listener)
+
+		const thrown = captureThrown(() =>
+			world.run(currentWorld => {
+				currentWorld.set(entity, Count, 1)
+			}),
+		)
+
+		expect(thrown.threw).toBe(true)
+		expect(thrown.value).toBe(error)
+		expect(world.require(entity, Count)).toBe(1)
+		expect(listener).toHaveBeenCalledTimes(1)
+	})
+
+	it("keeps execution failures primary over subscriber failures", () => {
+		const systemError = new Error("system failed")
+		const middlewareError = new Error("middleware failed")
+		const subscriberError = new Error("subscriber failed")
+		const firstWorld = createWorld()
+		const firstEntity = firstWorld.create()
+		firstWorld.subscribe(() => {
+			throw subscriberError
+		})
+
+		const systemFailure = captureThrown(() =>
+			firstWorld.run(currentWorld => {
+				currentWorld.set(firstEntity, Count, 1)
+				throw systemError
+			}),
+		)
+		expect(systemFailure.threw).toBe(true)
+		expect(systemFailure.value).toBe(systemError)
+
+		const secondWorld = createWorld({
+			middleware: [
+				((_execution, next) => {
+					next()
+					throw middlewareError
+				}) as SystemMiddleware,
+			],
+		})
+		const secondEntity = secondWorld.create()
+		secondWorld.subscribe(() => {
+			throw subscriberError
+		})
+
+		const middlewareFailure = captureThrown(() =>
+			secondWorld.run(currentWorld => {
+				currentWorld.set(secondEntity, Count, 1)
+			}),
+		)
+		expect(middlewareFailure.threw).toBe(true)
+		expect(middlewareFailure.value).toBe(middlewareError)
+	})
+
+	it("restores execution depth after a failed nested run", () => {
+		const depths: number[] = []
+		const error = new Error("nested failed")
+		const middleware: SystemMiddleware = (execution, next) => {
+			depths.push(execution.depth)
+			return next()
+		}
+		const world = createWorld({ middleware: [middleware] })
+
+		expect(() =>
+			world.run(currentWorld => {
+				currentWorld.run(() => {
+					throw error
+				})
+			}),
+		).toThrow(error)
+		world.run(() => undefined)
+
+		expect(depths).toEqual([0, 1, 0])
+	})
+
+	it("completes middleware before the outer batch flush", () => {
+		const events: string[] = []
+		const middleware: SystemMiddleware = (_execution, next) => {
+			events.push("middleware before")
+			const result = next()
+			events.push("middleware after")
+			return result
+		}
+		const world = createWorld({ middleware: [middleware] })
+		const entity = world.create()
+		world.subscribe(() => {
+			events.push("subscriber")
+		})
+
+		world.run(currentWorld => {
+			currentWorld.set(entity, Count, 1)
+			events.push("system")
+		})
+
+		expect(events).toEqual([
+			"middleware before",
+			"system",
+			"middleware after",
+			"subscriber",
+		])
 	})
 })
 

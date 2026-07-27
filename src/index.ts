@@ -27,5 +27,9 @@ export {
 	type Entity,
 	type SubscriptionScope,
 	type System,
+	type SystemExecution,
+	type SystemIdentity,
+	type SystemMiddleware,
 	type World,
+	type WorldOptions,
 } from "./world"
