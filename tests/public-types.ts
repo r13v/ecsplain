@@ -5,6 +5,9 @@ import {
 	type Entity,
 	optional,
 	type System,
+	type SystemExecution,
+	type SystemMiddleware,
+	type WorldOptions,
 	without,
 } from "ecsplain"
 
@@ -51,6 +54,34 @@ const move: System<{ entity: Entity; x: number }> = (currentWorld, input) => {
 }
 
 world.run(move, { entity, x: 4 })
+
+const traceMiddleware: SystemMiddleware = <Input, Output>(
+	execution: SystemExecution<Input, Output>,
+	next: () => Output,
+): Output => {
+	const system: System<Input, Output> = execution.system
+	const input: Input = execution.input
+	const depth: number = execution.depth
+
+	void system
+	void input
+	void depth
+
+	return next()
+}
+
+const worldOptions: WorldOptions = { middleware: [traceMiddleware] }
+const observedWorld = createWorld(worldOptions)
+observedWorld.run(move, { entity, x: 5 })
+
+// @ts-expect-error Middleware must be synchronous.
+const asyncMiddleware: SystemMiddleware = async (_execution, next) => next()
+
+// @ts-expect-error Middleware must return the value from next().
+const replacementMiddleware: SystemMiddleware = () => "replacement"
+
+void asyncMiddleware
+void replacementMiddleware
 
 // @ts-expect-error A query must request at least one component.
 world.query()

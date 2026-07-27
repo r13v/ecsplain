@@ -175,29 +175,29 @@ Completion requires all of the following:
 - Modify: `tests/world.test.ts`
 - Modify: `tests/public-types.ts`
 
-- [ ] Add failing tests in `tests/world.test.ts` for middleware registration through `createWorld({ middleware })`.
-- [ ] Add failing tests proving middleware array order is first-registered/outermost and every nested `world.run` traverses the complete chain.
-- [ ] Add failing tests proving the middleware array is snapshotted and direct `set`, `update`, `remove`, `spawn`, and `destroy` calls bypass the chain.
-- [ ] Define execution depth as zero-based: an application entry system has `depth: 0`, and its directly nested system has `depth: 1`.
-- [ ] Add failing tests that the execution context exposes the exact system function reference and the unchanged input value.
-- [ ] Add failing tests that system return values, thrown `Error` instances, and thrown `undefined` cross the middleware chain unchanged.
-- [ ] Add failing tests for middleware that returns normally without `next()`, invokes `next()` twice, returns a value not `Object.is`-equal to the `next()` result, or swallows/replaces an error thrown by `next()`.
-- [ ] Add a test that middleware throwing before `next()` prevents the system from running and propagates that middleware error.
-- [ ] Add a test that middleware throwing after a successful `next()` preserves system writes, flushes subscribers once, and then propagates the middleware error.
-- [ ] Add tests for competing system or middleware and subscriber failures, preserving the current primary-error priority.
-- [ ] Add a test that a failed nested run restores execution depth before the next top-level run.
-- [ ] Keep subscriber notification outside the system middleware boundary; document through a focused test that middleware completion occurs before the outer batch flush.
-- [ ] Add `SystemExecution` with readonly `system`, `input`, and zero-based `depth`.
-- [ ] Add a generic `SystemMiddleware` call signature whose `next` and return value share the same `Output` type.
-- [ ] Add `WorldOptions` with an optional readonly middleware array and change `createWorld()` to `createWorld(options?: WorldOptions)` without breaking no-argument callers.
-- [ ] Snapshot the supplied middleware array when creating the World so later mutation of the caller's array cannot change execution.
-- [ ] Implement one synchronous middleware dispatcher used by every `World.run`; do not route direct `set`, `update`, `remove`, `spawn`, or `destroy` calls through middleware.
-- [ ] Enforce exactly-one `next()` and unchanged result/error at runtime while preserving the original thrown value, including `undefined`.
-- [ ] Preserve the current outer batch flush and error-priority behavior.
-- [ ] Export `SystemExecution`, `SystemMiddleware`, and `WorldOptions` from `src/index.ts`.
-- [ ] Add compile-time examples in `tests/public-types.ts` for valid middleware and `createWorld` options.
-- [ ] Add `@ts-expect-error` coverage for asynchronous middleware and a middleware returning a fixed replacement value.
-- [ ] Run `npx vitest run tests/world.test.ts` and `npm run typecheck`.
+- [x] Add failing tests in `tests/world.test.ts` for middleware registration through `createWorld({ middleware })`.
+- [x] Add failing tests proving middleware array order is first-registered/outermost and every nested `world.run` traverses the complete chain.
+- [x] Add failing tests proving the middleware array is snapshotted and direct `set`, `update`, `remove`, `spawn`, and `destroy` calls bypass the chain.
+- [x] Define execution depth as zero-based: an application entry system has `depth: 0`, and its directly nested system has `depth: 1`.
+- [x] Add failing tests that the execution context exposes the exact system function reference and the unchanged input value.
+- [x] Add failing tests that system return values, thrown `Error` instances, and thrown `undefined` cross the middleware chain unchanged.
+- [x] Add failing tests for middleware that returns normally without `next()`, invokes `next()` twice, returns a value not `Object.is`-equal to the `next()` result, or swallows/replaces an error thrown by `next()`.
+- [x] Add a test that middleware throwing before `next()` prevents the system from running and propagates that middleware error.
+- [x] Add a test that middleware throwing after a successful `next()` preserves system writes, flushes subscribers once, and then propagates the middleware error.
+- [x] Add tests for competing system or middleware and subscriber failures, preserving the current primary-error priority.
+- [x] Add a test that a failed nested run restores execution depth before the next top-level run.
+- [x] Keep subscriber notification outside the system middleware boundary; document through a focused test that middleware completion occurs before the outer batch flush.
+- [x] Add `SystemExecution` with readonly `system`, `input`, and zero-based `depth`.
+- [x] Add a generic `SystemMiddleware` call signature whose `next` and return value share the same `Output` type.
+- [x] Add `WorldOptions` with an optional readonly middleware array and change `createWorld()` to `createWorld(options?: WorldOptions)` without breaking no-argument callers.
+- [x] Snapshot the supplied middleware array when creating the World so later mutation of the caller's array cannot change execution.
+- [x] Implement one synchronous middleware dispatcher used by every `World.run`; do not route direct `set`, `update`, `remove`, `spawn`, or `destroy` calls through middleware.
+- [x] Enforce exactly-one `next()` and unchanged result/error at runtime while preserving the original thrown value, including `undefined`.
+- [x] Preserve the current outer batch flush and error-priority behavior.
+- [x] Export `SystemExecution`, `SystemMiddleware`, and `WorldOptions` from `src/index.ts`.
+- [x] Add compile-time examples in `tests/public-types.ts` for valid middleware and `createWorld` options.
+- [x] Add `@ts-expect-error` coverage for asynchronous middleware and a middleware returning a fixed replacement value.
+- [x] Run `npx vitest run tests/world.test.ts` and `npm run typecheck`.
 
 ### Task 2: Add dependencies, scripts, and the invoice example shell
 
