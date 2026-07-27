@@ -401,15 +401,15 @@ Completion requires all of the following:
 - Modify: `README.md`
 - Modify: `docs/tutorial.md`
 
-- [ ] Record in ADR 0003 why observing middleware was selected over controlling middleware and read-only completion hooks.
-- [ ] Document zero-based depth, array order, nested execution, exactly-once `next`, unchanged result/error, synchronous execution, and the fact that subscriber notification is outside the system middleware boundary.
-- [ ] Warn that `Function.name` is diagnostic only and middleware should not log raw input by default.
-- [ ] Add `dev:invoice` to the root example commands and describe the third runnable example.
-- [ ] Explain the vertical-slice structure and dependency direction in the example README.
-- [ ] Explain the Query/ECS ownership table, QueryObserver bridge, monotonic-version and query-cancellation rules, typed API errors, optimistic ownership rule, MSW endpoints, refresh behavior, feature URL parameters, and tracing middleware.
-- [ ] Extend the async-data portion of `docs/tutorial.md` with a concise link to the runnable invoice example instead of duplicating its entire README.
-- [ ] Update the deliberate limits to state that middleware observes explicitly-run systems and does not introduce scheduling, async systems, side-effect orchestration, or rollback.
-- [ ] Run `npm run check` and manually verify every new relative documentation link.
+- [x] Record in ADR 0003 why observing middleware was selected over controlling middleware and read-only completion hooks.
+- [x] Document zero-based depth, array order, nested execution, exactly-once `next`, unchanged result/error, synchronous execution, and the fact that subscriber notification is outside the system middleware boundary.
+- [x] Warn that `Function.name` is diagnostic only and middleware should not log raw input by default.
+- [x] Add `dev:invoice` to the root example commands and describe the third runnable example.
+- [x] Explain the vertical-slice structure and dependency direction in the example README.
+- [x] Explain the Query/ECS ownership table, QueryObserver bridge, monotonic-version and query-cancellation rules, typed API errors, optimistic ownership rule, MSW endpoints, refresh behavior, feature URL parameters, and tracing middleware.
+- [x] Extend the async-data portion of `docs/tutorial.md` with a concise link to the runnable invoice example instead of duplicating its entire README.
+- [x] Update the deliberate limits to state that middleware observes explicitly-run systems and does not introduce scheduling, async systems, side-effect orchestration, or rollback.
+- [x] Run `npm run check` and manually verify every new relative documentation link.
 
 ### Task 10: Verify all acceptance criteria
 

@@ -1,10 +1,12 @@
 # Learning ECSplain through application UI
 
 This tutorial introduces ECSplain gradually and applies the same small set of
-ideas to two complete UI examples:
+ideas to three complete UI examples:
 
 1. a data table with filtering, sorting, selection, and in-place editing;
-2. a form whose active fields depend on another field.
+2. a form whose active fields depend on another field;
+3. an invoice approval workspace with TanStack Query, MSW, optimistic ECS state,
+   and monotonic server reconciliation.
 
 It then extends those patterns to async data, CRUD, optimistic updates,
 notifications, overlays, drag-and-drop, async validation, ownership, routing,
@@ -19,15 +21,17 @@ to compose and test.
 - **Foundations, sections 1–6:** build a world, query it, write systems, and
   connect scoped React subscriptions.
 - **Complete examples, sections 7–8:** study the table and dynamic form in the
-  repository.
+  repository; section 9 links to the runnable invoice approval companion.
 - **Application scenarios, sections 9–18:** reuse those patterns for common
   frontend architecture problems.
 - **Practice, sections 19–22:** collect recipes, test behavior, understand
   limits, and continue with exercises.
 
-Sections 7–8 are complete runnable repository examples. Sections 9–18 are
-focused blueprints: they show component models, system boundaries, and critical
-invariants without adding ten separate demo applications.
+Sections 7–8 are complete runnable repository examples. Section 9 includes a
+concise blueprint and points to the runnable invoice approval example for the
+full TanStack Query and MSW version. Sections 10–18 are focused blueprints:
+they show component models, system boundaries, and critical invariants without
+adding ten separate demo applications.
 
 ## 1. The mental model
 
@@ -827,6 +831,11 @@ This pattern applies to initial loading, search suggestions, pagination, and
 background refresh. A test can call the transition systems directly without
 mocking `fetch`; a separate controller test verifies effect orchestration.
 
+For a runnable version of this boundary with TanStack Query as the HTTP cache,
+MSW as the mock server, query cancellation, monotonic server versions, and
+ECS-owned optimistic approval state, see the
+[invoice approval example](../examples/invoice-approval).
+
 ## 10. Scenario: build a master-detail CRUD screen
 
 A master-detail screen has a list of entities, a selected entity, and a detail
@@ -1568,6 +1577,8 @@ ECSplain is intentionally small.
 - Queries are snapshots, not cached live collections.
 - Secondary indexes map complete component values to entity IDs; they do not
   infer relationships or own lifecycle.
+- Middleware observes explicitly-run systems only. It does not add scheduling,
+  async systems, side-effect orchestration, or rollback.
 - There is no automatic scheduler, resource API, or cascade deletion.
 
 The current table and dynamic-form examples each use one feature instance per
