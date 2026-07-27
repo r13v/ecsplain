@@ -374,6 +374,49 @@ describe("system middleware", () => {
 		expect(seen).toEqual([{ system, input, depth: 0 }])
 	})
 
+	it("prevents runtime execution context mutation from replacing input or metadata", () => {
+		const input = { label: "original" }
+		const replacement = { label: "replacement" }
+		const seen: Array<{
+			readonly system: unknown
+			readonly input: unknown
+			readonly depth: number
+		}> = []
+		const mutatesExecution: SystemMiddleware = (execution, next) => {
+			expect(Object.isFrozen(execution)).toBe(true)
+
+			try {
+				;(execution as { input: typeof replacement }).input = replacement
+			} catch {}
+			try {
+				;(execution as { system: unknown }).system = { name: "replacement" }
+			} catch {}
+			try {
+				;(execution as { depth: number }).depth = 99
+			} catch {}
+
+			return next()
+		}
+		const observesExecution: SystemMiddleware = (execution, next) => {
+			seen.push({
+				system: execution.system,
+				input: execution.input,
+				depth: execution.depth,
+			})
+			return next()
+		}
+		const world = createWorld({
+			middleware: [mutatesExecution, observesExecution],
+		})
+		const system: System<typeof input, string> = (
+			_currentWorld,
+			currentInput,
+		) => currentInput.label
+
+		expect(world.run(system, input)).toBe("original")
+		expect(seen).toEqual([{ system, input, depth: 0 }])
+	})
+
 	it("preserves return values and thrown values across middleware", () => {
 		const middleware: SystemMiddleware = (_execution, next) => next()
 		const world = createWorld({ middleware: [middleware] })

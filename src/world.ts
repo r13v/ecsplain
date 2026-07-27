@@ -371,11 +371,13 @@ class WorldState implements World {
 		let didExecutionThrow = false
 
 		try {
-			result = this.#runMiddleware(0, system, {
+			const systemInput = input as Input
+			const execution = Object.freeze<SystemExecution<Input>>({
 				system,
-				input: input as Input,
+				input: systemInput,
 				depth,
 			})
+			result = this.#runMiddleware(0, system, systemInput, execution)
 		} catch (error) {
 			didExecutionThrow = true
 			executionError = error
@@ -408,11 +410,12 @@ class WorldState implements World {
 	#runMiddleware<Input, Output>(
 		index: number,
 		system: System<Input, Output>,
+		input: Input,
 		execution: SystemExecution<Input>,
 	): Output {
 		const middleware = this.#middleware[index]
 		if (middleware === undefined) {
-			return system(this, execution.input)
+			return system(this, input)
 		}
 
 		let nextCalls = 0
@@ -430,7 +433,7 @@ class WorldState implements World {
 			}
 
 			try {
-				nextResult = this.#runMiddleware(index + 1, system, execution)
+				nextResult = this.#runMiddleware(index + 1, system, input, execution)
 				return nextResult as Output
 			} catch (error) {
 				didNextThrow = true
