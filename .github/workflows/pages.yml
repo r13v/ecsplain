@@ -1,0 +1,76 @@
+name: Deploy documentation to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+      - exp
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install framework dependencies
+        run: npm ci
+
+      - name: Build examples
+        run: |
+          npx vite build examples/table --config vite.config.ts --base=/ecsplain/examples/table/
+          npx vite build examples/dynamic-form --config vite.config.ts --base=/ecsplain/examples/dynamic-form/
+
+      - name: Install documentation dependencies
+        working-directory: docs-site
+        run: npm ci
+
+      - name: Build documentation
+        working-directory: docs-site
+        env:
+          BASE_PATH: /ecsplain/
+        run: npm run build
+
+      - name: Add live examples to the site
+        run: |
+          mkdir -p docs-site/dist/client/examples/table
+          mkdir -p docs-site/dist/client/examples/dynamic-form
+          cp -R examples/table/dist/. docs-site/dist/client/examples/table/
+          cp -R examples/dynamic-form/dist/. docs-site/dist/client/examples/dynamic-form/
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs-site/dist/client
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
