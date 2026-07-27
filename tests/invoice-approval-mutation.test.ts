@@ -15,6 +15,7 @@ import {
 import {
 	ApprovalEnabled,
 	ApprovalError,
+	ApprovalVariant,
 	createInvoiceApprovalApi,
 	InvoiceApiError,
 	type InvoiceApprovalCommand,
@@ -91,6 +92,7 @@ function createMutationFixture(
 	const workspace = createInvoiceWorkspace(world)
 	const workspaceEntity = world.create()
 	world.set(workspaceEntity, ApprovalEnabled, true)
+	world.set(workspaceEntity, ApprovalVariant, "direct")
 	world.run(reconcileInvoices, {
 		workspace,
 		response: { items: initialInvoices },
@@ -232,6 +234,73 @@ describe("invoice approval mutation", () => {
 		).toBe(true)
 
 		fixture.queryClient.clear()
+	})
+
+	it("maps generic approval failures into fallback ECS error state", async () => {
+		const fixture = createMutationFixture()
+		const networkError = new Error("Network unavailable")
+
+		await expect(
+			submitInvoiceApproval({
+				api: {
+					async approveInvoice() {
+						throw networkError
+					},
+				},
+				command: fixture.command,
+				queryClient: fixture.queryClient,
+				workspace: fixture.workspace,
+				world: fixture.world,
+			}),
+		).rejects.toBe(networkError)
+
+		expect(
+			fixture.world.get(fixture.invoiceEntity, PendingApproval),
+		).toBeUndefined()
+		expect(fixture.world.require(fixture.invoiceEntity, ApprovalError)).toEqual(
+			{
+				message: "Approval request failed",
+			},
+		)
+		expect(cachedInvoice(fixture.queryClient, "invoice-1")).toMatchObject({
+			status: "pending",
+			version: 1,
+			canApprove: true,
+		})
+		expect(
+			fixture.queryClient.getQueryState(invoiceQueryKey)?.isInvalidated,
+		).toBe(true)
+
+		fixture.queryClient.clear()
+	})
+
+	it("maps non-JSON and blank approval errors to the typed fallback message", async () => {
+		server.resetHandlers(
+			http.post(
+				new URL("invoices/:invoiceId/approve", apiBaseUrl).href,
+				() => new HttpResponse("server down", { status: 500 }),
+			),
+		)
+
+		await expect(
+			createInvoiceApprovalApi(apiBaseUrl).approveInvoice("invoice-1"),
+		).rejects.toMatchObject({
+			message: "Approval request failed",
+			status: 500,
+		})
+
+		server.resetHandlers(
+			http.post(new URL("invoices/:invoiceId/approve", apiBaseUrl).href, () =>
+				HttpResponse.json({ message: "   " }, { status: 502 }),
+			),
+		)
+
+		await expect(
+			createInvoiceApprovalApi(apiBaseUrl).approveInvoice("invoice-1"),
+		).rejects.toMatchObject({
+			message: "Approval request failed",
+			status: 502,
+		})
 	})
 
 	it("invalidates after a stale successful DTO without regressing ECS or Query cache", async () => {

@@ -31,14 +31,18 @@ export type System<Input = void, Output = void> = (
 	input: Input,
 ) => Output
 
-export interface SystemExecution<Input = unknown, Output = unknown> {
-	readonly system: System<Input, Output>
+export interface SystemIdentity {
+	readonly name: string
+}
+
+export interface SystemExecution<Input = unknown> {
+	readonly system: SystemIdentity
 	readonly input: Input
 	readonly depth: number
 }
 
 export type SystemMiddleware = <Input, Output>(
-	execution: SystemExecution<Input, Output>,
+	execution: SystemExecution<Input>,
 	next: () => Output,
 ) => Output
 
@@ -367,7 +371,11 @@ class WorldState implements World {
 		let didExecutionThrow = false
 
 		try {
-			result = this.#runWithMiddleware(system, input as Input, depth)
+			result = this.#runMiddleware(0, system, {
+				system,
+				input: input as Input,
+				depth,
+			})
 		} catch (error) {
 			didExecutionThrow = true
 			executionError = error
@@ -397,35 +405,32 @@ class WorldState implements World {
 		return result as Output
 	}
 
-	#runWithMiddleware<Input, Output>(
-		system: System<Input, Output>,
-		input: Input,
-		depth: number,
-	): Output {
-		return this.#runMiddleware(0, { system, input, depth })
-	}
-
 	#runMiddleware<Input, Output>(
 		index: number,
-		execution: SystemExecution<Input, Output>,
+		system: System<Input, Output>,
+		execution: SystemExecution<Input>,
 	): Output {
 		const middleware = this.#middleware[index]
 		if (middleware === undefined) {
-			return execution.system(this, execution.input)
+			return system(this, execution.input)
 		}
 
 		let nextCalls = 0
 		let nextResult: Output | undefined
 		let nextError: unknown
 		let didNextThrow = false
+		let nextActive = true
 		const next = (): Output => {
+			if (!nextActive) {
+				throw new Error("System middleware must call next() synchronously")
+			}
 			nextCalls += 1
 			if (nextCalls > 1) {
 				throw new Error("System middleware must call next() exactly once")
 			}
 
 			try {
-				nextResult = this.#runMiddleware(index + 1, execution)
+				nextResult = this.#runMiddleware(index + 1, system, execution)
 				return nextResult as Output
 			} catch (error) {
 				didNextThrow = true
@@ -442,6 +447,8 @@ class WorldState implements World {
 		} catch (error) {
 			didMiddlewareThrow = true
 			middlewareError = error
+		} finally {
+			nextActive = false
 		}
 
 		if (didMiddlewareThrow) {

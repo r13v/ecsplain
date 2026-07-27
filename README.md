@@ -111,12 +111,12 @@ outside-in, so the first middleware is the outermost middleware. Depth is
 zero-based: an application entry system has `depth: 0`, and its directly nested
 system has `depth: 1`.
 
-Middleware observes execution only. It receives the exact system function and
+Middleware observes execution only. It receives the exact system identity and
 unchanged input value, must call `next()` exactly once, must return the same
 result that `next()` produced, and must rethrow the same value if `next()`
-throws. The dispatcher enforces those rules at runtime. Middleware is
-synchronous, and subscriber notification happens after the outer batch, outside
-the middleware boundary.
+throws. The public identity is intentionally non-callable. The dispatcher
+enforces these rules at runtime. Middleware is synchronous, and subscriber
+notification happens after the outer batch, outside the middleware boundary.
 
 Use `Function.name` only for diagnostics; bundlers may change it. Tracing code
 should avoid logging raw input by default because system input can contain
@@ -222,6 +222,7 @@ npm run typecheck
 npm test
 npm run build
 npm run build:examples
+npm run build:invoice
 npx playwright install chromium
 npm run test:e2e
 npm run knip

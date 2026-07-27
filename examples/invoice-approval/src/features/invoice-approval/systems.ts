@@ -54,7 +54,7 @@ export const requestInvoiceApproval: System<
 	}
 
 	world.remove(invoice, ApprovalError)
-	if ((world.get(workspace, ApprovalVariant) ?? "direct") === "review") {
+	if (world.require(workspace, ApprovalVariant) === "review") {
 		world.set(invoice, ApprovalReview, true)
 		return undefined
 	}
@@ -74,6 +74,7 @@ export const confirmInvoiceApprovalReview: System<
 
 	const command = approvalCommandForInvoice(world, invoice)
 	if (command === undefined) {
+		world.remove(invoice, ApprovalReview)
 		return undefined
 	}
 

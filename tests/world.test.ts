@@ -459,6 +459,28 @@ describe("system middleware", () => {
 		).toEqual({ threw: true, value: undefined })
 	})
 
+	it("rejects next calls deferred beyond the synchronous middleware frame", () => {
+		let deferredNext: (() => unknown) | undefined
+		const middleware = ((_execution, next) => {
+			deferredNext = next
+			return undefined
+		}) as SystemMiddleware
+		const world = createWorld({ middleware: [middleware] })
+		let systemCalls = 0
+
+		expect(() =>
+			world.run(() => {
+				systemCalls += 1
+				return "value"
+			}),
+		).toThrow("System middleware must call next() exactly once")
+		expect(systemCalls).toBe(0)
+		expect(() => deferredNext?.()).toThrow(
+			"System middleware must call next() synchronously",
+		)
+		expect(systemCalls).toBe(0)
+	})
+
 	it("propagates middleware thrown before next without running the system", () => {
 		const error = new Error("middleware failed")
 		const system = vi.fn()

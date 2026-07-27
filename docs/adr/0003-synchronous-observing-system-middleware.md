@@ -11,8 +11,10 @@ creation, and traversed by every `world.run`, including nested runs.
 Middleware is observing middleware. It may measure, trace, or validate the
 execution boundary, but it cannot skip a system, replace input, replace a
 result, or replace a thrown value. Each middleware receives a readonly
-`SystemExecution` containing the exact system function reference, the unchanged
-input value, and zero-based depth. The first application entry system has
+`SystemExecution` containing the exact system identity, the unchanged input
+value, and zero-based depth. The public identity is non-callable, while the
+runtime value remains the original function object for comparison and
+diagnostics. The first application entry system has
 `depth: 0`; a directly nested `world.run` has `depth: 1`.
 
 Registered array order is outside-in: the first middleware in the array is the

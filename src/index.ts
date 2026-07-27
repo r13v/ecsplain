@@ -28,6 +28,7 @@ export {
 	type SubscriptionScope,
 	type System,
 	type SystemExecution,
+	type SystemIdentity,
 	type SystemMiddleware,
 	type World,
 	type WorldOptions,

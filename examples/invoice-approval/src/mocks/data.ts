@@ -5,11 +5,9 @@ import type {
 
 export interface MockInvoiceStore {
 	readonly listRequests: number
-	readonly approvalRequests: number
 	approveInvoice(invoiceId: string): MockInvoiceApprovalResult
 	currentInvoices(): readonly InvoiceDto[]
 	listInvoices(): InvoiceListResponse
-	replaceInvoices(invoices: readonly InvoiceDto[]): void
 }
 
 type MockInvoiceApprovalResult =
@@ -31,18 +29,13 @@ export function createMockInvoiceStore(
 	initialInvoices: readonly InvoiceDto[] = defaultMockInvoices,
 ): MockInvoiceStore {
 	let listRequests = 0
-	let approvalRequests = 0
 	let invoices = copyInvoices(initialInvoices)
 
 	return {
 		get listRequests() {
 			return listRequests
 		},
-		get approvalRequests() {
-			return approvalRequests
-		},
 		approveInvoice(invoiceId) {
-			approvalRequests += 1
 			const invoiceIndex = invoices.findIndex(
 				invoice => invoice.id === invoiceId,
 			)
@@ -94,9 +87,6 @@ export function createMockInvoiceStore(
 		listInvoices() {
 			listRequests += 1
 			return { items: copyInvoices(invoices) }
-		},
-		replaceInvoices(nextInvoices) {
-			invoices = copyInvoices(nextInvoices)
 		},
 	}
 }

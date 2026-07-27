@@ -148,6 +148,40 @@ describe("invoice reconciliation", () => {
 		expect(world.query(RenderableInvoices)).toHaveLength(2)
 	})
 
+	it("keeps invoices and local state when a valid list response is empty", () => {
+		const world = createWorld()
+		const workspace = createInvoiceWorkspace(world)
+		const first = world.run(applyInvoiceSnapshot, {
+			workspace,
+			invoice: invoice({ id: "invoice-1" }),
+		})
+		const second = world.run(applyInvoiceSnapshot, {
+			workspace,
+			invoice: invoice({
+				id: "invoice-2",
+				number: "INV-002",
+				vendor: "Tailspin Toys",
+				canApprove: false,
+			}),
+		})
+		world.set(first.entity, LocalNote, { text: "keep local note" })
+		world.set(second.entity, LocalFlag, true)
+
+		const applied = world.run(reconcileInvoices, {
+			workspace,
+			response: { items: [] },
+		})
+
+		expect(applied).toBe(0)
+		expect(world.exists(first.entity)).toBe(true)
+		expect(world.exists(second.entity)).toBe(true)
+		expect(world.require(first.entity, LocalNote)).toEqual({
+			text: "keep local note",
+		})
+		expect(world.require(second.entity, LocalFlag)).toBe(true)
+		expect(world.query(RenderableInvoices)).toHaveLength(2)
+	})
+
 	it("ignores lower and equal versions so stale responses cannot regress capability", () => {
 		const world = createWorld()
 		const workspace = createInvoiceWorkspace(world)
