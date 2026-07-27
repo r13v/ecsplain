@@ -372,23 +372,23 @@ Completion requires all of the following:
 - Modify: `examples/invoice-approval/src/styles.css`
 - Create: `e2e/invoice-approval.spec.ts`
 
-- [ ] Write the Playwright scenarios first against the acceptance behavior below, then implement the UI until they pass.
-- [ ] Render Query-owned initial loading, error, and background-refresh status while keeping cached ECS rows visible during refresh.
-- [ ] Add a manual refresh control that calls `queryClient.invalidateQueries({ queryKey: invoiceQueryKey })`.
-- [ ] Render ECS-owned server snapshots, approval capability, review prompt, pending indicator, and approval error per entity.
-- [ ] In the direct variant, pass the command returned by the first ECS approval action to the mutation adapter.
-- [ ] In the review variant, require explicit confirmation, support cancel, and pass only the confirmation command to the mutation adapter.
-- [ ] In the disabled variant, render no approval actions and explain that rollout configuration disabled the feature.
-- [ ] Keep React handlers thin: translate interaction into ECS system input and pass returned commands to the adapter.
-- [ ] Provide accessible headings, buttons, status messages, alerts, and stable test IDs only where role/name queries are insufficient.
-- [ ] Verify initial loading resolves into the three MSW-backed invoices.
-- [ ] Verify manual refresh shows background activity while cached invoice rows remain visible.
-- [ ] Verify successful direct approval immediately shows ECS pending state, then renders the approved server response and removes the approval action.
-- [ ] Verify HTTP 409 clears pending state, keeps the prior snapshot, and renders the server message as an alert.
-- [ ] Verify `?variant=review` opens review state first, cancel restores idle state, and confirmation starts mutation.
-- [ ] Verify `?approval=off` loads the same server data with no approval controls.
-- [ ] Capture browser console output and assert a real approval entry system emits a successful trace with `depth: 0`; do not require artificial nesting or assert timing values.
-- [ ] Run `npm run build:invoice`, `npm run check`, `npm run typecheck`, and `npx playwright test e2e/invoice-approval.spec.ts`.
+- [x] Write the Playwright scenarios first against the acceptance behavior below, then implement the UI until they pass.
+- [x] Render Query-owned initial loading, error, and background-refresh status while keeping cached ECS rows visible during refresh.
+- [x] Add a manual refresh control that calls `queryClient.invalidateQueries({ queryKey: invoiceQueryKey })`.
+- [x] Render ECS-owned server snapshots, approval capability, review prompt, pending indicator, and approval error per entity.
+- [x] In the direct variant, pass the command returned by the first ECS approval action to the mutation adapter.
+- [x] In the review variant, require explicit confirmation, support cancel, and pass only the confirmation command to the mutation adapter.
+- [x] In the disabled variant, render no approval actions and explain that rollout configuration disabled the feature.
+- [x] Keep React handlers thin: translate interaction into ECS system input and pass returned commands to the adapter.
+- [x] Provide accessible headings, buttons, status messages, alerts, and stable test IDs only where role/name queries are insufficient.
+- [x] Verify initial loading resolves into the three MSW-backed invoices.
+- [x] Verify manual refresh shows background activity while cached invoice rows remain visible.
+- [x] Verify successful direct approval immediately shows ECS pending state, then renders the approved server response and removes the approval action.
+- [x] Verify HTTP 409 clears pending state, keeps the prior snapshot, and renders the server message as an alert.
+- [x] Verify `?variant=review` opens review state first, cancel restores idle state, and confirmation starts mutation.
+- [x] Verify `?approval=off` loads the same server data with no approval controls.
+- [x] Capture browser console output and assert a real approval entry system emits a successful trace with `depth: 0`; do not require artificial nesting or assert timing values.
+- [x] Run `npm run build:invoice`, `npm run check`, `npm run typecheck`, and `npx playwright test e2e/invoice-approval.spec.ts`.
 
 ### Task 9: Document the public contract and runnable architecture
 
