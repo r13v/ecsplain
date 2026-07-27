@@ -25,6 +25,7 @@ import {
 	InvoiceSnapshot,
 	type InvoiceWorkspace,
 	invoiceQueryKey,
+	parseInvoiceDto,
 	RenderableInvoices,
 	startInvoiceQueryBridge,
 } from "../examples/invoice-approval/src/features/invoice-workspace"
@@ -359,5 +360,26 @@ describe("invoice query bridge", () => {
 
 		expect(queryClient.getQueryData(queryOptions.queryKey)).toBeUndefined()
 		queryClient.clear()
+	})
+
+	it("rejects DTO values that could corrupt invoice identity or version ordering", () => {
+		const invalidDtos: readonly unknown[] = [
+			invoice({ id: "" }),
+			invoice({ id: "   " }),
+			invoice({ amountCents: -1 }),
+			invoice({ amountCents: Number.MAX_SAFE_INTEGER + 1 }),
+			invoice({ version: -1 }),
+			invoice({ version: Number.MAX_SAFE_INTEGER + 1 }),
+		]
+
+		for (const invalidDto of invalidDtos) {
+			expect(() => parseInvoiceDto(invalidDto)).toThrow(
+				"Invalid invoice response",
+			)
+		}
+
+		expect(parseInvoiceDto(invoice({ amountCents: 0, version: 0 }))).toEqual(
+			invoice({ amountCents: 0, version: 0 }),
+		)
 	})
 })

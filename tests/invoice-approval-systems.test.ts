@@ -83,6 +83,24 @@ describe("invoice approval systems", () => {
 		expect(world.get(invoiceEntity, ApprovalError)).toBeUndefined()
 	})
 
+	it("keeps the previous approval error if workspace approval config is invalid", () => {
+		const { world, workspaceEntity, invoiceEntity } = createApprovalFixture()
+		world.set(invoiceEntity, ApprovalError, { message: "Still visible" })
+		world.remove(workspaceEntity, ApprovalVariant)
+
+		expect(() =>
+			world.run(requestInvoiceApproval, {
+				workspace: workspaceEntity,
+				invoice: invoiceEntity,
+			}),
+		).toThrow("ApprovalVariant")
+		expect(world.require(invoiceEntity, ApprovalError)).toEqual({
+			message: "Still visible",
+		})
+		expect(world.get(invoiceEntity, PendingApproval)).toBeUndefined()
+		expect(world.get(invoiceEntity, ApprovalReview)).toBeUndefined()
+	})
+
 	it("uses review variant state until explicit confirmation or cancel", () => {
 		const { world, workspaceEntity, invoiceEntity } = createApprovalFixture({
 			variant: "review",
