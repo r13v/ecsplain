@@ -25,12 +25,14 @@
 	},
 	"scripts": {
 		"build": "tsup && tsc -p tsconfig.build.json",
-		"build:examples": "npm run build:table && npm run build:form",
+		"build:examples": "npm run build:table && npm run build:form && npm run build:invoice",
 		"build:form": "vite build examples/dynamic-form --config vite.config.ts",
+		"build:invoice": "vite build examples/invoice-approval --config vite.config.ts",
 		"build:table": "vite build examples/table --config vite.config.ts",
 		"check": "biome check .",
 		"check:fix": "biome check --write .",
 		"dev:form": "vite examples/dynamic-form --config vite.config.ts",
+		"dev:invoice": "vite examples/invoice-approval --config vite.config.ts",
 		"dev:table": "vite examples/table --config vite.config.ts",
 		"knip": "knip",
 		"test": "vitest run",
@@ -63,6 +65,7 @@
 	"devDependencies": {
 		"@biomejs/biome": "2.5.5",
 		"@playwright/test": "^1.62.0",
+		"@tanstack/react-query": "5.101.4",
 		"@testing-library/dom": "^10.4.1",
 		"@testing-library/react": "^16.3.2",
 		"@types/node": "^26.1.1",
@@ -71,11 +74,17 @@
 		"@vitejs/plugin-react": "^6.0.4",
 		"jsdom": "^29.1.1",
 		"knip": "^6.29.0",
+		"msw": "2.15.0",
 		"react": "^19.2.8",
 		"react-dom": "^19.2.8",
 		"tsup": "^8.5.1",
 		"typescript": "^7.0.2",
 		"vite": "^8.1.5",
 		"vitest": "^4.1.10"
+	},
+	"msw": {
+		"workerDirectory": [
+			"examples/invoice-approval/public"
+		]
 	}
 }

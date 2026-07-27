@@ -26,5 +26,11 @@ export default defineConfig({
 			port: 4174,
 			reuseExistingServer: !process.env.CI,
 		},
+		{
+			command:
+				"npm run dev:invoice -- --host 127.0.0.1 --port 4175 --strictPort",
+			port: 4175,
+			reuseExistingServer: !process.env.CI,
+		},
 	],
 })
