@@ -237,18 +237,18 @@ Completion requires all of the following:
 - Create: `examples/invoice-approval/src/features/invoice-workspace/index.ts`
 - Create: `tests/invoice-reconciliation.test.ts`
 
-- [ ] Write failing tests first for initial spawn, update by `InvoiceId`, capability synchronization, duplicate prevention, absent-list-item preservation, and unrelated-component preservation.
-- [ ] Add failing tests proving a lower or equal `version` cannot replace an existing snapshot or its `CanApprove` capability, while a higher `version` updates both together.
-- [ ] Define the server contract `InvoiceDto` with `id`, `number`, `vendor`, `amountCents`, `status`, `version`, and `canApprove`, plus `InvoiceListResponse` with `items`.
-- [ ] Document in the contract that `version` increases for every server-visible change to an invoice.
-- [ ] Define workspace-owned `InvoiceId`, immutable `InvoiceSnapshot`, `CanApprove`, and a reusable query for renderable invoice entities.
-- [ ] Create a unique secondary index for `InvoiceId` during bootstrap and use it for all server-to-entity reconciliation.
-- [ ] Implement public `applyInvoiceSnapshot` to spawn a missing entity, apply an incoming DTO to an existing entity only when its `version` is greater than the stored `InvoiceSnapshot.version`, and return whether it applied the DTO.
-- [ ] Implement `reconcileInvoices` as an explicit entry system that runs `applyInvoiceSnapshot` for each DTO; this is the example's natural nested-system composition for one remote list event.
-- [ ] Update `InvoiceSnapshot` and `CanApprove` as one synchronous system operation for an accepted version.
-- [ ] Limit reconciliation to workspace-owned snapshot and capability components so unrelated components remain untouched.
-- [ ] Do not destroy an entity merely because it is absent from one list response; deletion lifecycle is outside this example.
-- [ ] Run `npx vitest run tests/invoice-reconciliation.test.ts` and `npm run typecheck`.
+- [x] Write failing tests first for initial spawn, update by `InvoiceId`, capability synchronization, duplicate prevention, absent-list-item preservation, and unrelated-component preservation.
+- [x] Add failing tests proving a lower or equal `version` cannot replace an existing snapshot or its `CanApprove` capability, while a higher `version` updates both together.
+- [x] Define the server contract `InvoiceDto` with `id`, `number`, `vendor`, `amountCents`, `status`, `version`, and `canApprove`, plus `InvoiceListResponse` with `items`.
+- [x] Document in the contract that `version` increases for every server-visible change to an invoice.
+- [x] Define workspace-owned `InvoiceId`, immutable `InvoiceSnapshot`, `CanApprove`, and a reusable query for renderable invoice entities.
+- [x] Create a unique secondary index for `InvoiceId` during bootstrap and use it for all server-to-entity reconciliation.
+- [x] Implement public `applyInvoiceSnapshot` to spawn a missing entity, apply an incoming DTO to an existing entity only when its `version` is greater than the stored `InvoiceSnapshot.version`, and return whether it applied the DTO.
+- [x] Implement `reconcileInvoices` as an explicit entry system that runs `applyInvoiceSnapshot` for each DTO; this is the example's natural nested-system composition for one remote list event.
+- [x] Update `InvoiceSnapshot` and `CanApprove` as one synchronous system operation for an accepted version.
+- [x] Limit reconciliation to workspace-owned snapshot and capability components so unrelated components remain untouched.
+- [x] Do not destroy an entity merely because it is absent from one list response; deletion lifecycle is outside this example.
+- [x] Run `npx vitest run tests/invoice-reconciliation.test.ts` and `npm run typecheck`.
 
 ### Task 4: Build the ECS approval workflow
 
