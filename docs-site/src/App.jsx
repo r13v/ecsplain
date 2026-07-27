@@ -18,7 +18,8 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { flatLessons, groups, lessons, ui } from "./content.js"
 
 const supportedLocales = ["en", "ru"]
-const defaultLesson = "systems"
+const defaultLocale = "en"
+const defaultLesson = "overview"
 const githubUrl = "https://github.com/r13v/ecsplain"
 const demoPaths = {
 	table: "examples/table/",
@@ -30,14 +31,11 @@ function readRoute() {
 		.replace(/^#\/?/, "")
 		.split("/")
 	const savedLocale = window.localStorage.getItem("ecsplain-locale")
-	const browserLocale = navigator.language.toLowerCase().startsWith("ru")
-		? "ru"
-		: "en"
 	const locale = supportedLocales.includes(localeFromHash)
 		? localeFromHash
 		: supportedLocales.includes(savedLocale)
 			? savedLocale
-			: browserLocale
+			: defaultLocale
 	const lesson = flatLessons.some(item => item.id === lessonFromHash)
 		? lessonFromHash
 		: defaultLesson
