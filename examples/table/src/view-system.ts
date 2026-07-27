@@ -18,12 +18,8 @@ export const rebuildTableView: System<RebuildTableViewInput> = (
 	world,
 	{ table },
 ) => {
-	const filters = world.get(table, TableFilters)
-	const sort = world.get(table, TableSort)
-
-	if (filters === undefined || sort === undefined) {
-		throw new Error("The table is missing filters or sort state")
-	}
+	const filters = world.require(table, TableFilters)
+	const sort = world.require(table, TableSort)
 
 	const columns = world
 		.query(TableColumn)

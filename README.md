@@ -36,15 +36,29 @@ permissions.
 ## Core API
 
 ```ts
-import { createWorld, defineComponent, type System } from "ecsplain"
+import {
+	createWorld,
+	defineComponent,
+	defineQuery,
+	optional,
+	type System,
+	without,
+} from "ecsplain"
 
 const Position = defineComponent<{ x: number; y: number }>("Position")
 const Selected = defineComponent<true>("Selected")
+const Archived = defineComponent<true>("Archived")
 
 const world = createWorld()
-const entity = world.create()
-
-world.set(entity, Position, { x: 0, y: 0 })
+const entity = world.spawn(
+	[Position, { x: 0, y: 0 }],
+	[Selected, true],
+)
+const visiblePositions = defineQuery(
+	Position,
+	optional(Selected),
+	without(Archived),
+)
 
 const move: System<{ x: number; y: number }> = (
 	currentWorld,
@@ -55,10 +69,23 @@ const move: System<{ x: number; y: number }> = (
 
 world.run(move, { x: 12, y: 8 })
 
-for (const [currentEntity, position] of world.query(Position)) {
-	console.log(currentEntity, position)
+for (const [currentEntity, position, selected] of world.query(
+	visiblePositions,
+)) {
+	console.log(currentEntity, position, selected === true)
 }
 ```
+
+`spawn` creates an entity with a typed group of components in one notification
+batch. `get` returns `undefined` for a missing component; `require` throws when
+the component is an application invariant. `single` requires exactly one query
+result.
+
+Queries can be written inline or reused through `defineQuery`. A normal token
+is required and returned, `optional(token)` returns a value or `undefined`, and
+`without(token)` excludes matching entities without adding data to the result
+tuple. All queries remain deterministic snapshots rather than live
+collections.
 
 `world.run` batches subscriber notifications. Nested systems join their outer
 batch. A failed system does not roll changes back: already-applied changes stay
@@ -68,18 +95,46 @@ Component reads are readonly at the type level. The runtime does not clone or
 freeze component values, so every observable change must pass a new value to
 `set` or `update`.
 
+### Secondary indexes
+
+External IDs and other lookup keys should remain components:
+
+```ts
+const CustomerId = defineComponent<string>("CustomerId")
+const customersById = world.index(CustomerId, { unique: true })
+const customer = world.spawn([CustomerId, "customer-42"])
+
+customersById.get("customer-42") === customer
+```
+
+Without `{ unique: true }`, `get` returns every matching entity in deterministic
+entity-ID order. Indexes track `set`, `update`, `remove`, and `destroy`
+synchronously, including reads made inside a running system. Index keys use
+JavaScript `Map` equality over the complete component value; prefer scalar key
+components for durable IDs.
+
 ## React API
 
 ```tsx
-import { WorldProvider, useComponent, useQuery } from "ecsplain/react"
+import {
+	WorldProvider,
+	useComponent,
+	useQuery,
+	useQuerySelector,
+} from "ecsplain/react"
 
 function SelectedPositions() {
-	const rows = useQuery(Position, Selected)
+	const rows = useQuery(visiblePositions)
 	return rows.map(([entity, position]) => (
 		<output key={entity}>
 			{position.x}, {position.y}
 		</output>
 	))
+}
+
+function VisiblePositionCount() {
+	const count = useQuerySelector(visiblePositions, rows => rows.length)
+	return <output>{count}</output>
 }
 
 root.render(
@@ -94,12 +149,15 @@ The React entry point exports:
 - `WorldProvider`
 - `useWorld`
 - `useQuery`
+- `useQuerySelector`
 - `useComponent`
 - `useComponentSelector`
 
-`useQuery` subscribes to its component tokens. `useComponent` and
-`useComponentSelector` subscribe to one entity-token pair, allowing cell-level
-updates without waking unrelated rows.
+`useQuery` subscribes to every required, optional, and excluded token in its
+query. `useQuerySelector` accepts a `defineQuery` descriptor and rerenders only
+when its selected result changes according to `Object.is` or an optional
+equality function. `useComponent` and `useComponentSelector` subscribe to one
+entity-token pair, allowing cell-level updates without waking unrelated rows.
 
 ## Examples
 
@@ -140,5 +198,6 @@ npm run knip
 
 `ecsplain` does not include archetypes, entity ID reuse, global resources,
 automatic system scheduling, async systems, rollback, proxy observation,
-relationship ownership, or cascade deletion. These are explicit non-goals for
-the current educational scope.
+relationship ownership, or cascade deletion. Secondary indexes provide lookup,
+not ownership or deletion semantics. These are explicit non-goals for the
+current educational scope.

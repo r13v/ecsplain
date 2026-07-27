@@ -1,4 +1,10 @@
-import { defineComponent, type Entity, type World } from "ecsplain"
+import {
+	defineComponent,
+	defineQuery,
+	type Entity,
+	optional,
+	type World,
+} from "ecsplain"
 
 export type DeliveryMethod = "courier" | "pickup"
 export type FieldName =
@@ -53,3 +59,9 @@ export const DeliveryBranch =
 export const FieldError = defineComponent<FieldErrorData>("FieldError")
 export const FormSubmission =
 	defineComponent<FormSubmissionData>("FormSubmission")
+
+export const ActiveFormFields = defineQuery(FormField, FieldValue, ActiveField)
+export const DeliveryBranches = defineQuery(
+	DeliveryBranch,
+	optional(ActiveField),
+)

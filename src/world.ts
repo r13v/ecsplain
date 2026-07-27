@@ -3,6 +3,24 @@ import type {
 	ComponentData,
 	ComponentInput,
 } from "./component"
+import {
+	type AnyQueryItem,
+	type AnyQueryResult,
+	isOptionalTerm,
+	isWithoutTerm,
+	type QueryDefinition,
+	type QueryItem,
+	type QueryResult,
+	type QueryTerms,
+	resolveQueryTerms,
+} from "./query"
+import {
+	type MutableIndexState,
+	type SecondaryIndex,
+	SecondaryIndexState,
+	type UniqueSecondaryIndex,
+	UniqueSecondaryIndexState,
+} from "./secondary-index"
 
 declare const entityBrand: unique symbol
 
@@ -13,14 +31,10 @@ export type System<Input = void, Output = void> = (
 	input: Input,
 ) => Output
 
-export type QueryResult<Tokens extends readonly AnyComponentToken[]> = Array<
-	[
-		entity: Entity,
-		...components: {
-			-readonly [Index in keyof Tokens]: ComponentData<Tokens[Index]>
-		},
-	]
->
+export type ComponentEntry<Token extends AnyComponentToken> = readonly [
+	component: Token,
+	value: ComponentInput<Token>,
+]
 
 export type SubscriptionScope =
 	| {
@@ -33,6 +47,13 @@ export type SubscriptionScope =
 
 export interface World {
 	create(): Entity
+	spawn<
+		const Tokens extends readonly [AnyComponentToken, ...AnyComponentToken[]],
+	>(
+		...components: {
+			-readonly [Index in keyof Tokens]: ComponentEntry<Tokens[Index]>
+		}
+	): Entity
 	destroy(entity: Entity): void
 	exists(entity: Entity): boolean
 	get<Token extends AnyComponentToken>(
@@ -51,18 +72,40 @@ export interface World {
 		updater: (current: ComponentData<Token>) => ComponentInput<Token>,
 	): void
 	remove(entity: Entity, component: AnyComponentToken): boolean
-	query<
-		const Tokens extends readonly [AnyComponentToken, ...AnyComponentToken[]],
-	>(...components: Tokens): QueryResult<Tokens>
+	require<Token extends AnyComponentToken>(
+		entity: Entity,
+		component: Token,
+	): ComponentData<Token>
+	query<const Terms extends QueryTerms>(...terms: Terms): QueryResult<Terms>
+	query<const Terms extends QueryTerms>(
+		definition: QueryDefinition<Terms>,
+	): QueryResult<Terms>
+	single<const Terms extends QueryTerms>(...terms: Terms): QueryItem<Terms>
+	single<const Terms extends QueryTerms>(
+		definition: QueryDefinition<Terms>,
+	): QueryItem<Terms>
+	index<Token extends AnyComponentToken>(
+		component: Token,
+	): SecondaryIndex<ComponentData<Token>>
+	index<Token extends AnyComponentToken>(
+		component: Token,
+		options: { readonly unique: true },
+	): UniqueSecondaryIndex<ComponentData<Token>>
 	run<Output>(system: System<void, Output>): Output
 	run<Input, Output>(system: System<Input, Output>, input: Input): Output
 	subscribe(listener: () => void, scope?: SubscriptionScope): () => void
 	getVersion(scope?: SubscriptionScope): number
 }
 
+interface ComponentIndexes {
+	many: SecondaryIndexState<unknown> | undefined
+	unique: UniqueSecondaryIndexState<unknown> | undefined
+}
+
 class WorldState implements World {
 	readonly #entities = new Set<Entity>()
 	readonly #stores = new Map<AnyComponentToken, Map<Entity, unknown>>()
+	readonly #indexes = new Map<AnyComponentToken, ComponentIndexes>()
 	readonly #globalListeners = new Set<() => void>()
 	readonly #componentListeners = new Map<AnyComponentToken, Set<() => void>>()
 	readonly #exactListeners = new Map<
@@ -89,12 +132,38 @@ class WorldState implements World {
 		})
 	}
 
+	spawn<
+		const Tokens extends readonly [AnyComponentToken, ...AnyComponentToken[]],
+	>(
+		...components: {
+			-readonly [Index in keyof Tokens]: ComponentEntry<Tokens[Index]>
+		}
+	): Entity {
+		if (components.length === 0) {
+			throw new Error("Spawn requires at least one component")
+		}
+
+		for (const [component, value] of components) {
+			this.#assertComponentValue(component, value)
+			this.#assertIndexesCanSet(component, undefined, value)
+		}
+
+		return this.#mutate(() => {
+			const entity = this.create()
+			for (const [component, value] of components) {
+				this.set(entity, component, value)
+			}
+			return entity
+		})
+	}
+
 	destroy(entity: Entity): void {
 		this.#mutate(() => {
 			this.#assertEntity(entity)
 
 			for (const [component, store] of this.#stores) {
 				if (store.delete(entity)) {
+					this.#deleteFromIndexes(component, entity)
 					this.#recordChange(component, entity)
 				}
 			}
@@ -118,6 +187,19 @@ class WorldState implements World {
 			| undefined
 	}
 
+	require<Token extends AnyComponentToken>(
+		entity: Entity,
+		component: Token,
+	): ComponentData<Token> {
+		const value = this.get(entity, component)
+		if (value === undefined) {
+			throw new Error(
+				`Entity ${entity} does not have component "${component.name}"`,
+			)
+		}
+		return value
+	}
+
 	has(entity: Entity, component: AnyComponentToken): boolean {
 		this.#assertEntity(entity)
 		return this.#stores.get(component)?.has(entity) ?? false
@@ -130,10 +212,7 @@ class WorldState implements World {
 	): void {
 		this.#mutate(() => {
 			this.#assertEntity(entity)
-
-			if (value === undefined) {
-				throw new Error(`Component "${component.name}" cannot store undefined`)
-			}
+			this.#assertComponentValue(component, value)
 
 			let store = this.#stores.get(component)
 			if (store === undefined) {
@@ -146,7 +225,9 @@ class WorldState implements World {
 				return
 			}
 
+			this.#assertIndexesCanSet(component, entity, value)
 			store.set(entity, value)
+			this.#setIndexes(component, entity, value)
 			this.#recordChange(component, entity)
 		})
 	}
@@ -176,6 +257,7 @@ class WorldState implements World {
 			const removed = this.#stores.get(component)?.delete(entity) ?? false
 
 			if (removed) {
+				this.#deleteFromIndexes(component, entity)
 				this.#recordChange(component, entity)
 			}
 
@@ -183,34 +265,74 @@ class WorldState implements World {
 		})
 	}
 
-	query<
-		const Tokens extends readonly [AnyComponentToken, ...AnyComponentToken[]],
-	>(...components: Tokens): QueryResult<Tokens> {
-		if (components.length === 0) {
-			throw new Error("A query requires at least one component")
+	query<const Terms extends QueryTerms>(...terms: Terms): QueryResult<Terms>
+	query<const Terms extends QueryTerms>(
+		definition: QueryDefinition<Terms>,
+	): QueryResult<Terms>
+	query(...input: readonly unknown[]): AnyQueryResult {
+		return this.#query(resolveQueryTerms(input))
+	}
+
+	single<const Terms extends QueryTerms>(...terms: Terms): QueryItem<Terms>
+	single<const Terms extends QueryTerms>(
+		definition: QueryDefinition<Terms>,
+	): QueryItem<Terms>
+	single(...input: readonly unknown[]): AnyQueryItem {
+		const terms = resolveQueryTerms(input)
+		const result = this.#query(terms)
+
+		if (result.length !== 1) {
+			throw new Error(
+				`Expected exactly one entity matching query, found ${result.length}`,
+			)
 		}
 
-		const stores = components.map(component => this.#stores.get(component))
-		if (stores.some(store => store === undefined)) {
-			return [] as QueryResult<Tokens>
+		return result[0] as QueryItem<QueryTerms>
+	}
+
+	index<Token extends AnyComponentToken>(
+		component: Token,
+	): SecondaryIndex<ComponentData<Token>>
+	index<Token extends AnyComponentToken>(
+		component: Token,
+		options: { readonly unique: true },
+	): UniqueSecondaryIndex<ComponentData<Token>>
+	index<Token extends AnyComponentToken>(
+		component: Token,
+		options?: { readonly unique: true },
+	):
+		| SecondaryIndex<ComponentData<Token>>
+		| UniqueSecondaryIndex<ComponentData<Token>> {
+		const current = this.#indexes.get(component) ?? {
+			many: undefined,
+			unique: undefined,
 		}
 
-		const presentStores = stores as Array<Map<Entity, unknown>>
-		let smallestStore = presentStores[0] as Map<Entity, unknown>
-		for (const store of presentStores.slice(1)) {
-			if (store.size < smallestStore.size) {
-				smallestStore = store
+		if (options?.unique === true) {
+			if (current.unique !== undefined) {
+				return current.unique as UniqueSecondaryIndex<ComponentData<Token>>
 			}
+
+			const index = new UniqueSecondaryIndexState<unknown>(component)
+			for (const [entity, value] of this.#stores.get(component) ?? []) {
+				index.set(entity, value)
+			}
+			current.unique = index
+			this.#indexes.set(component, current)
+			return index as UniqueSecondaryIndex<ComponentData<Token>>
 		}
 
-		const entities = Array.from(smallestStore.keys())
-			.filter(entity => presentStores.every(store => store.has(entity)))
-			.sort((left, right) => left - right)
+		if (current.many !== undefined) {
+			return current.many as SecondaryIndex<ComponentData<Token>>
+		}
 
-		return entities.map(entity => [
-			entity,
-			...presentStores.map(store => store.get(entity)),
-		]) as QueryResult<Tokens>
+		const index = new SecondaryIndexState<unknown>()
+		for (const [entity, value] of this.#stores.get(component) ?? []) {
+			index.set(entity, value)
+		}
+		current.many = index
+		this.#indexes.set(component, current)
+		return index as SecondaryIndex<ComponentData<Token>>
 	}
 
 	run<Output>(system: System<void, Output>): Output
@@ -324,6 +446,60 @@ class WorldState implements World {
 		return this.#exactVersions.get(scope.component)?.get(scope.entity) ?? 0
 	}
 
+	#query(terms: QueryTerms): QueryResult<QueryTerms> {
+		const requiredComponents: AnyComponentToken[] = []
+		const excludedComponents: AnyComponentToken[] = []
+
+		for (const term of terms) {
+			if (isOptionalTerm(term)) {
+				continue
+			}
+			if (isWithoutTerm(term)) {
+				excludedComponents.push(term.component)
+			} else {
+				requiredComponents.push(term)
+			}
+		}
+
+		const requiredStores = requiredComponents.map(component =>
+			this.#stores.get(component),
+		)
+		if (requiredStores.some(store => store === undefined)) {
+			return []
+		}
+
+		const presentStores = requiredStores as Array<Map<Entity, unknown>>
+		let smallestStore = presentStores[0] as Map<Entity, unknown>
+		for (const store of presentStores.slice(1)) {
+			if (store.size < smallestStore.size) {
+				smallestStore = store
+			}
+		}
+
+		const excludedStores = excludedComponents.map(component =>
+			this.#stores.get(component),
+		)
+		const entities = Array.from(smallestStore.keys())
+			.filter(
+				entity =>
+					presentStores.every(store => store.has(entity)) &&
+					excludedStores.every(store => !store?.has(entity)),
+			)
+			.sort((left, right) => left - right)
+
+		return entities.map(entity => {
+			const values: unknown[] = []
+			for (const term of terms) {
+				if (isWithoutTerm(term)) {
+					continue
+				}
+				const component = isOptionalTerm(term) ? term.component : term
+				values.push(this.#stores.get(component)?.get(entity))
+			}
+			return [entity, ...values] as QueryItem<QueryTerms>
+		})
+	}
+
 	#mutate<Output>(operation: () => Output): Output {
 		if (this.#notifying) {
 			throw new Error("World cannot be changed from a subscriber")
@@ -373,6 +549,54 @@ class WorldState implements World {
 		if (!this.#entities.has(entity)) {
 			throw new Error(`Entity ${entity} does not exist`)
 		}
+	}
+
+	#assertComponentValue(component: AnyComponentToken, value: unknown): void {
+		if (value === undefined) {
+			throw new Error(`Component "${component.name}" cannot store undefined`)
+		}
+	}
+
+	#assertIndexesCanSet(
+		component: AnyComponentToken,
+		entity: Entity | undefined,
+		value: unknown,
+	): void {
+		for (const index of this.#indexStates(component)) {
+			index.assertCanSet(entity, value)
+		}
+	}
+
+	#setIndexes(
+		component: AnyComponentToken,
+		entity: Entity,
+		value: unknown,
+	): void {
+		for (const index of this.#indexStates(component)) {
+			index.set(entity, value)
+		}
+	}
+
+	#deleteFromIndexes(component: AnyComponentToken, entity: Entity): void {
+		for (const index of this.#indexStates(component)) {
+			index.delete(entity)
+		}
+	}
+
+	#indexStates(component: AnyComponentToken): MutableIndexState[] {
+		const indexes = this.#indexes.get(component)
+		if (indexes === undefined) {
+			return []
+		}
+
+		const states: MutableIndexState[] = []
+		if (indexes.many !== undefined) {
+			states.push(indexes.many)
+		}
+		if (indexes.unique !== undefined) {
+			states.push(indexes.unique)
+		}
+		return states
 	}
 
 	#recordChange(component?: AnyComponentToken, entity?: Entity): void {

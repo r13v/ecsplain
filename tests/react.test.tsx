@@ -1,17 +1,27 @@
 // @vitest-environment jsdom
 
 import { act, render, screen } from "@testing-library/react"
-import { createWorld, defineComponent } from "ecsplain"
+import {
+	createWorld,
+	defineComponent,
+	defineQuery,
+	optional,
+	without,
+} from "ecsplain"
 import {
 	useComponent,
 	useComponentSelector,
 	useQuery,
+	useQuerySelector,
 	WorldProvider,
 } from "ecsplain/react"
 import { describe, expect, it } from "vitest"
 
 const Person = defineComponent<{ name: string; role: string }>("Person")
 const Selected = defineComponent<true>("Selected")
+const Archived = defineComponent<true>("Archived")
+const ActivePeople = defineQuery(Person, optional(Selected), without(Archived))
+const People = defineQuery(Person)
 
 describe("React bindings", () => {
 	it("updates a query only for its component scope", () => {
@@ -40,6 +50,34 @@ describe("React bindings", () => {
 		act(() => world.set(entity, Person, { name: "Grace", role: "Admin" }))
 		expect(renders).toBe(2)
 		expect(screen.getByText("Grace")).toBeTruthy()
+	})
+
+	it("tracks optional and excluded dependencies from a query definition", () => {
+		const world = createWorld()
+		const entity = world.spawn([Person, { name: "Ada", role: "Admin" }])
+
+		function Summary() {
+			const people = useQuery(ActivePeople)
+			return (
+				<output>
+					{people.length}:{String(people[0]?.[2] ?? false)}
+				</output>
+			)
+		}
+
+		render(
+			<WorldProvider world={world}>
+				<Summary />
+			</WorldProvider>,
+		)
+
+		expect(screen.getByText("1:false")).toBeTruthy()
+
+		act(() => world.set(entity, Selected, true))
+		expect(screen.getByText("1:true")).toBeTruthy()
+
+		act(() => world.set(entity, Archived, true))
+		expect(screen.getByText("0:false")).toBeTruthy()
 	})
 
 	it("isolates exact entity-component subscriptions", () => {
@@ -122,6 +160,64 @@ describe("React bindings", () => {
 
 		expect(nameRenders).toBe(2)
 		expect(roleRenders).toBe(1)
+	})
+
+	it("does not render query selectors when their selected value is unchanged", () => {
+		const world = createWorld()
+		const entity = world.spawn([Person, { name: "Ada", role: "Admin" }])
+		let renders = 0
+
+		function Count() {
+			renders += 1
+			const count = useQuerySelector(People, people => people.length)
+			return <output>{count}</output>
+		}
+
+		render(
+			<WorldProvider world={world}>
+				<Count />
+			</WorldProvider>,
+		)
+
+		expect(renders).toBe(1)
+
+		act(() => world.set(entity, Person, { name: "Ada", role: "Editor" }))
+		expect(renders).toBe(1)
+
+		act(() => world.spawn([Person, { name: "Grace", role: "Admin" }]))
+		expect(renders).toBe(2)
+		expect(screen.getByText("2")).toBeTruthy()
+	})
+
+	it("supports custom query selection equality", () => {
+		const world = createWorld()
+		const entity = world.spawn([Person, { name: "Ada", role: "Admin" }])
+		let renders = 0
+
+		function Names() {
+			renders += 1
+			const names = useQuerySelector(
+				People,
+				people => people.map(([, person]) => person.name),
+				(left, right) =>
+					left.length === right.length &&
+					left.every((name, index) => name === right[index]),
+			)
+			return <output>{names.join(", ")}</output>
+		}
+
+		const rendered = render(
+			<WorldProvider world={world}>
+				<Names />
+			</WorldProvider>,
+		)
+
+		act(() => world.set(entity, Person, { name: "Ada", role: "Editor" }))
+		expect(renders).toBe(1)
+
+		act(() => world.set(entity, Person, { name: "Grace", role: "Editor" }))
+		expect(renders).toBe(2)
+		expect(rendered.container.textContent).toBe("Grace")
 	})
 
 	it("returns undefined safely when a subscribed entity is destroyed", () => {

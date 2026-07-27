@@ -2,6 +2,7 @@ import type { Entity, World } from "ecsplain"
 import {
 	FocusedCell,
 	SelectedCell,
+	SelectedCells,
 	SelectionGesture,
 	TableView,
 	type TableViewData,
@@ -16,15 +17,11 @@ export function requireTableView(
 	world: World,
 	table: Entity,
 ): Readonly<TableViewData> {
-	const view = world.get(table, TableView)
-	if (view === undefined) {
-		throw new Error("The table does not have a derived view")
-	}
-	return view
+	return world.require(table, TableView)
 }
 
 export function selectedCells(world: World): Set<Entity> {
-	return new Set(world.query(SelectedCell).map(([cell]) => cell))
+	return new Set(world.query(SelectedCells).map(([cell]) => cell))
 }
 
 export function applySelection(
@@ -58,7 +55,7 @@ export function setFocusedCell(world: World, cell: Entity | undefined): void {
 }
 
 export function clearSelectionState(world: World, table: Entity): void {
-	for (const [cell] of world.query(SelectedCell)) {
+	for (const [cell] of world.query(SelectedCells)) {
 		world.remove(cell, SelectedCell)
 	}
 	for (const [cell] of world.query(FocusedCell)) {
@@ -71,7 +68,7 @@ export function reconcileSelectionWithView(world: World, table: Entity): void {
 	const view = requireTableView(world, table)
 	const visibleCells = new Set(view.rows.flatMap(row => [...row.cells]))
 
-	for (const [cell] of world.query(SelectedCell)) {
+	for (const [cell] of world.query(SelectedCells)) {
 		if (!visibleCells.has(cell)) {
 			world.remove(cell, SelectedCell)
 		}

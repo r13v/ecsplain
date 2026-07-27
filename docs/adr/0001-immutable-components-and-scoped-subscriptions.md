@@ -17,4 +17,4 @@ Ecsplain treats component values as immutable and observes changes only through 
 - Component reads are readonly by contract, but the runtime does not clone or freeze values.
 - A real update must produce a different value according to `Object.is`.
 - `World` maintains global and scoped change versions for `useSyncExternalStore`.
-- `useQuery` subscribes by component tokens, while `useComponent` and `useComponentSelector` subscribe to an exact entity-token pair.
+- `useQuery` and `useQuerySelector` subscribe to every required, optional, and excluded query token, while `useComponent` and `useComponentSelector` subscribe to an exact entity-token pair.

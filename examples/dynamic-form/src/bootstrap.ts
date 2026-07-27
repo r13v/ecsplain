@@ -70,30 +70,35 @@ const fieldDefinitions: readonly FieldDefinition[] = [
 
 export function createFormExample(): FormExample {
 	const world = createWorld()
-	const form = world.create()
-
-	world.run(currentWorld => {
+	const form = world.run(currentWorld => {
+		const form = currentWorld.create()
 		for (const definition of fieldDefinitions) {
-			const field = currentWorld.create()
-			currentWorld.set(field, FormField, {
+			const fieldData = {
 				name: definition.name,
 				label: definition.label,
 				control: definition.control,
-			})
-			currentWorld.set(field, FieldValue, {
+			}
+			const value = {
 				value: definition.initialValue,
-			})
+			}
 
 			if (definition.branch === undefined) {
-				currentWorld.set(field, ActiveField, true)
+				currentWorld.spawn(
+					[FormField, fieldData],
+					[FieldValue, value],
+					[ActiveField, true],
+				)
 			} else {
-				currentWorld.set(field, DeliveryBranch, {
-					method: definition.branch,
-				})
+				currentWorld.spawn(
+					[FormField, fieldData],
+					[FieldValue, value],
+					[DeliveryBranch, { method: definition.branch }],
+				)
 			}
 		}
 
 		currentWorld.run(syncDeliveryBranch)
+		return form
 	})
 
 	return { world, form }

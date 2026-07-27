@@ -1,14 +1,18 @@
 import {
 	createWorld,
 	defineComponent,
+	defineQuery,
 	type Entity,
+	optional,
 	type System,
+	without,
 } from "ecsplain"
 import { describe, expect, it, vi } from "vitest"
 
 const Name = defineComponent<{ value: string }>("Name")
 const Count = defineComponent<number>("Count")
 const Selected = defineComponent<true>("Selected")
+const ExternalId = defineComponent<string>("ExternalId")
 
 function captureThrown(action: () => void): { threw: boolean; value: unknown } {
 	try {
@@ -73,6 +77,33 @@ describe("entity and component lifecycle", () => {
 		expect(() => world.destroy(entity)).toThrow("does not exist")
 	})
 
+	it("spawns a complete entity in one notification batch", () => {
+		const world = createWorld()
+		const globalListener = vi.fn()
+		const nameListener = vi.fn()
+		world.subscribe(globalListener)
+		world.subscribe(nameListener, { components: [Name] })
+
+		const entity = world.spawn([Name, { value: "Ada" }], [Count, 1])
+
+		expect(world.require(entity, Name)).toEqual({ value: "Ada" })
+		expect(world.require(entity, Count)).toBe(1)
+		expect(globalListener).toHaveBeenCalledTimes(1)
+		expect(nameListener).toHaveBeenCalledTimes(1)
+		expect(() => Reflect.apply(world.spawn, world, [])).toThrow(
+			"Spawn requires at least one component",
+		)
+	})
+
+	it("requires components when their absence violates an invariant", () => {
+		const world = createWorld()
+		const entity = world.create()
+
+		expect(() => world.require(entity, Name)).toThrow(
+			`Entity ${entity} does not have component "Name"`,
+		)
+	})
+
 	it("reserves undefined for a missing component", () => {
 		const world = createWorld()
 		const entity = world.create()
@@ -135,6 +166,111 @@ describe("queries", () => {
 
 		expect(visited).toEqual(entities)
 		expect(world.query(Count)).toEqual([])
+	})
+
+	it("supports reusable optional and exclusion terms", () => {
+		const world = createWorld()
+		const first = world.spawn([Name, { value: "first" }], [Count, 1])
+		const second = world.spawn([Name, { value: "second" }])
+		const third = world.spawn(
+			[Name, { value: "third" }],
+			[Count, 3],
+			[Selected, true],
+		)
+		const availableNames = defineQuery(Name, optional(Count), without(Selected))
+
+		expect(world.query(availableNames)).toEqual([
+			[first, { value: "first" }, 1],
+			[second, { value: "second" }, undefined],
+		])
+		expect(world.query(Name, optional(Count), without(Selected))).toEqual([
+			[first, { value: "first" }, 1],
+			[second, { value: "second" }, undefined],
+		])
+
+		world.set(second, Selected, true)
+		world.remove(third, Selected)
+
+		expect(world.query(availableNames)).toEqual([
+			[first, { value: "first" }, 1],
+			[third, { value: "third" }, 3],
+		])
+	})
+
+	it("enforces exact query cardinality", () => {
+		const world = createWorld()
+
+		expect(() => world.single(Name)).toThrow(
+			"Expected exactly one entity matching query, found 0",
+		)
+
+		const entity = world.spawn([Name, { value: "only" }])
+		expect(world.single(defineQuery(Name))).toEqual([entity, { value: "only" }])
+
+		world.spawn([Name, { value: "second" }])
+		expect(() => world.single(Name)).toThrow(
+			"Expected exactly one entity matching query, found 2",
+		)
+	})
+})
+
+describe("secondary indexes", () => {
+	it("tracks non-unique component values across their lifecycle", () => {
+		const world = createWorld()
+		const first = world.spawn([Count, 1])
+		const second = world.spawn([Count, 1])
+		const counts = world.index(Count)
+
+		expect(counts.get(1)).toEqual([first, second])
+		expect(counts.has(2)).toBe(false)
+
+		world.run(currentWorld => {
+			currentWorld.set(second, Count, 2)
+			expect(counts.get(2)).toEqual([second])
+		})
+		expect(counts.get(1)).toEqual([first])
+		expect(counts.get(2)).toEqual([second])
+
+		world.remove(first, Count)
+		world.destroy(second)
+		expect(counts.has(1)).toBe(false)
+		expect(counts.has(2)).toBe(false)
+	})
+
+	it("enforces unique keys without applying conflicting writes", () => {
+		const world = createWorld()
+		const first = world.spawn([ExternalId, "customer-1"])
+		const byId = world.index(ExternalId, { unique: true })
+
+		expect(byId.get("customer-1")).toBe(first)
+		expect(world.index(ExternalId, { unique: true })).toBe(byId)
+
+		const version = world.getVersion()
+		expect(() => world.spawn([ExternalId, "customer-1"])).toThrow(
+			'Component "ExternalId" already indexes value for entity',
+		)
+		expect(world.getVersion()).toBe(version)
+
+		const second = world.spawn([ExternalId, "customer-2"])
+		expect(() => world.set(second, ExternalId, "customer-1")).toThrow(
+			'Component "ExternalId" already indexes value for entity',
+		)
+		expect(world.require(second, ExternalId)).toBe("customer-2")
+
+		world.remove(first, ExternalId)
+		world.set(second, ExternalId, "customer-1")
+		expect(byId.get("customer-1")).toBe(second)
+		expect(byId.has("customer-2")).toBe(false)
+	})
+
+	it("rejects a unique index when existing values already conflict", () => {
+		const world = createWorld()
+		world.spawn([ExternalId, "duplicate"])
+		world.spawn([ExternalId, "duplicate"])
+
+		expect(() => world.index(ExternalId, { unique: true })).toThrow(
+			'Component "ExternalId" already indexes value for entity',
+		)
 	})
 })
 

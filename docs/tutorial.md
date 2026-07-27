@@ -37,7 +37,8 @@ An Entity Component System separates identity, data, and behavior.
 - A **component** is passive data attached to an entity.
 - A **component token** identifies one component type at runtime.
 - A **system** is a synchronous function that reads and changes the world.
-- A **query** finds entities that have every requested component.
+- A **query** finds entities that match required, optional, and excluded
+  component terms.
 - The **world** owns all entities and component values.
 
 React remains responsible for rendering. Browser events become inputs to ECS
@@ -92,6 +93,7 @@ interface TaskData {
 
 const Task = defineComponent<TaskData>("Task")
 const Selected = defineComponent<true>("Selected")
+const Archived = defineComponent<true>("Archived")
 ```
 
 `Task` stores record data. `Selected` is a marker component: its presence is the
@@ -107,12 +109,40 @@ world.set(task, Task, {
 world.set(task, Selected, true)
 ```
 
+When the initial components are already known, create the complete entity in
+one notification batch:
+
+```ts
+const secondTask = world.spawn(
+	[
+		Task,
+		{
+			title: "Try the table example",
+			completed: false,
+		},
+	],
+	[Selected, true],
+)
+```
+
+Each spawn entry is a `[component, value]` pair. TypeScript checks every value
+against its token.
+
 Read and inspect components:
 
 ```ts
 const currentTask = world.get(task, Task)
 const isSelected = world.has(task, Selected)
 ```
+
+Use `require` when absence means the application invariant is broken:
+
+```ts
+const taskData = world.require(task, Task)
+```
+
+Unlike `get`, `require` throws a diagnostic error instead of returning
+`undefined`.
 
 Remove a capability or state by removing its component:
 
@@ -141,7 +171,7 @@ observation.
 
 ## 4. Query by capabilities
 
-A query returns entities that have all requested components:
+A query returns entities that have every required component:
 
 ```ts
 for (const [entity, taskData] of world.query(Task)) {
@@ -156,6 +186,36 @@ for (const [entity, taskData] of world.query(Task, Selected)) {
 	console.log("Selected:", entity, taskData.title)
 }
 ```
+
+Use `optional` to read a component without requiring it, and `without` to
+exclude entities:
+
+```ts
+import { defineQuery, optional, without } from "ecsplain"
+
+const VisibleTasks = defineQuery(
+	Task,
+	optional(Selected),
+	without(Archived),
+)
+
+for (const [entity, taskData, selected] of world.query(VisibleTasks)) {
+	console.log(entity, taskData.title, selected === true)
+}
+```
+
+A normal token is required and contributes its value to the result tuple.
+`optional(Selected)` contributes `true | undefined`. `without(Archived)`
+changes membership but contributes no value. `defineQuery` freezes these terms
+in a reusable descriptor that can be shared by systems and React.
+
+When exactly one entity must match, encode that invariant directly:
+
+```ts
+const [selectedTask, taskData] = world.single(Task, Selected)
+```
+
+`single` throws when zero or multiple entities match.
 
 Queries are deterministic snapshots ordered by entity ID. They are safe to
 iterate while changing the world because the result is not a live collection.
@@ -259,15 +319,17 @@ still works in a unit test with no DOM.
 `useQuery` subscribes to the requested component tokens:
 
 ```tsx
-import { useQuery } from "ecsplain/react"
+import { useQuery, useQuerySelector } from "ecsplain/react"
 
 function TaskList() {
-	const tasks = useQuery(Task)
+	const tasks = useQuery(VisibleTasks)
 
 	return (
 		<ul>
-			{tasks.map(([entity, task]) => (
-				<li key={entity}>{task.title}</li>
+			{tasks.map(([entity, task, selected]) => (
+				<li key={entity}>
+					{task.title} {selected ? "(selected)" : ""}
+				</li>
 			))}
 		</ul>
 	)
@@ -275,6 +337,23 @@ function TaskList() {
 ```
 
 Changing an unrelated component token does not wake this subscription.
+Required, optional, and excluded tokens are all subscription dependencies.
+
+### Select a value from a query
+
+Use `useQuerySelector` when a view needs an aggregate or another small derived
+value rather than the complete rows:
+
+```tsx
+function VisibleTaskCount() {
+	const count = useQuerySelector(VisibleTasks, tasks => tasks.length)
+	return <output>{count}</output>
+}
+```
+
+The hook accepts a `defineQuery` descriptor. React does not rerender the
+consumer when the selected value remains `Object.is`-equal. Pass a third
+equality function for derived arrays or objects.
 
 ### Read one entity-component pair
 
@@ -365,12 +444,10 @@ Bootstrap creates every row-column coordinate:
 
 ```ts
 for (const user of users) {
-	const row = world.create()
-	world.set(row, UserRow, user)
+	const row = world.spawn([UserRow, user])
 
 	for (const column of columns) {
-		const cell = world.create()
-		world.set(cell, TableCell, { row, column })
+		world.spawn([TableCell, { row, column }])
 	}
 }
 ```
@@ -563,23 +640,29 @@ matching conditional expression.
 The delivery method system synchronizes branch membership:
 
 ```ts
+const DeliveryBranches = defineQuery(
+	DeliveryBranch,
+	optional(ActiveField),
+)
+
 const syncDeliveryBranch: System = world => {
 	const method = readDeliveryMethod(world)
 
-	for (const [field, branch] of world.query(DeliveryBranch)) {
-		if (branch.method === method) {
+	for (const [field, branch, active] of world.query(DeliveryBranches)) {
+		if (branch.method === method && active === undefined) {
 			world.set(field, ActiveField, true)
-		} else {
+		} else if (branch.method !== method && active !== undefined) {
 			world.remove(field, ActiveField)
 		}
 	}
 }
 ```
 
-React renders only the active query:
+The active-field query is defined once and shared by systems and React:
 
 ```tsx
-const fields = useQuery(FormField, FieldValue, ActiveField)
+const ActiveFormFields = defineQuery(FormField, FieldValue, ActiveField)
+const fields = useQuery(ActiveFormFields)
 ```
 
 Changing the marker changes the query structure and therefore the rendered
@@ -609,11 +692,7 @@ This pattern works for:
 Submission queries only active fields:
 
 ```ts
-for (const [field, definition, fieldValue] of world.query(
-	FormField,
-	FieldValue,
-	ActiveField,
-)) {
+for (const [field, definition, fieldValue] of world.query(ActiveFormFields)) {
 	const value = fieldValue.value.trim()
 
 	if (value.length === 0) {
@@ -809,10 +888,7 @@ const beginCustomerEdit: System<{ readonly customer: Entity }> = (
 	world,
 	{ customer },
 ) => {
-	const current = world.get(customer, Customer)
-	if (current === undefined) {
-		throw new Error("Cannot edit an entity without Customer")
-	}
+	const current = world.require(customer, Customer)
 
 	world.set(customer, CustomerDraft, { ...current })
 	world.remove(customer, CustomerError)
@@ -829,13 +905,38 @@ components, and usually selects it:
 
 ```ts
 const createCustomer: System<void, Entity> = world => {
-	const customer = world.create()
-	world.set(customer, Customer, { name: "", email: "" })
+	const customer = world.spawn([Customer, { name: "", email: "" }])
 	world.run(selectCustomer, { customer })
 	world.run(beginCustomerEdit, { customer })
 	return customer
 }
 ```
+
+### Index stable external IDs
+
+An ECS entity is an internal identity, while API and database IDs are domain
+data. Store an external ID in its own component and index that component:
+
+```ts
+const CustomerId = defineComponent<string>("CustomerId")
+const customersById = world.index(CustomerId, { unique: true })
+
+const customer = world.spawn(
+	[CustomerId, "customer-42"],
+	[Customer, { name: "Ada", email: "ada@example.test" }],
+)
+
+customersById.get("customer-42") === customer
+```
+
+A unique index rejects conflicting writes before changing the component.
+Without `{ unique: true }`, `get(key)` returns all matching entity IDs in
+deterministic order. Indexes update synchronously on `set`, `update`, `remove`,
+and `destroy`, so a system can write a key and immediately look it up.
+
+Index equality follows JavaScript `Map` semantics over the complete component
+value. Separate scalar components such as `CustomerId`, `TenantId`, or
+`OwnedBy` make durable lookup behavior explicit.
 
 Deletion must address relationships and selection explicitly:
 
@@ -964,13 +1065,16 @@ const showToast: System<{
 	readonly kind: ToastKind
 	readonly expiresAt: number
 }, Entity> = (world, input) => {
-	const toast = world.create()
-	world.set(toast, Toast, {
-		message: input.message,
-		kind: input.kind,
-	})
-	world.set(toast, ToastExpiry, { expiresAt: input.expiresAt })
-	return toast
+	return world.spawn(
+		[
+			Toast,
+			{
+				message: input.message,
+				kind: input.kind,
+			},
+		],
+		[ToastExpiry, { expiresAt: input.expiresAt }],
+	)
 }
 ```
 
@@ -1462,6 +1566,8 @@ ECSplain is intentionally small.
 - Derived components are synchronized by application systems.
 - Relationships are plain entity IDs with no automatic ownership.
 - Queries are snapshots, not cached live collections.
+- Secondary indexes map complete component values to entity IDs; they do not
+  infer relationships or own lifecycle.
 - There is no automatic scheduler, resource API, or cascade deletion.
 
 The current table and dynamic-form examples each use one feature instance per
@@ -1498,6 +1604,8 @@ Build on the examples in small steps:
 13. Add owner components so two independent forms can share one world.
 14. Parse a detail route into a `Route` component and handle browser back.
 15. Derive edit and delete capabilities for three user roles.
+16. Add a unique `CustomerId` index and test that a duplicate server record is
+    rejected without changing the existing entity.
 
 Each exercise should add data as a component, behavior as a system, and only
 the smallest React subscription needed to render the result.

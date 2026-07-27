@@ -16,8 +16,14 @@ _Avoid_: Component class, string key
 **System**: Behavior that selects entities by their components and updates the world.
 _Avoid_: Component method
 
-**Query**: A deterministic snapshot of entities that currently have every requested component, together with those component values.
+**Query**: A deterministic snapshot selected by required, optional, and excluded component terms. It returns the entity, required values, and optional values.
 _Avoid_: Live query, selector
+
+**Query Definition**: An immutable reusable description created by `defineQuery`; systems and React can evaluate the same terms against a world.
+_Avoid_: Cached query, live collection
+
+**Secondary Index**: A synchronous lookup from one complete component value to matching entity IDs. A unique index also rejects duplicate values.
+_Avoid_: Relationship, external cache
 
 **Row Entity**: An entity that represents one logical record in a table and owns its authoritative typed record data.
 _Avoid_: DOM row, row index
