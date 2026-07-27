@@ -242,7 +242,7 @@ function Curriculum({ copy, currentId, locale, mobileOpen, onClose, query }) {
 
 				<a
 					className="long-form-link"
-					href={`${githubUrl}/blob/exp/docs/tutorial.md`}
+					href={`${githubUrl}/blob/main/docs/tutorial.md`}
 					target="_blank"
 					rel="noreferrer"
 				>
