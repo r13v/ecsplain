@@ -344,21 +344,21 @@ Completion requires all of the following:
 - Modify: `examples/invoice-approval/src/main.tsx`
 - Create: `tests/invoice-example-bootstrap.test.ts`
 
-- [ ] Write focused tests first for default, review, and disabled URL configuration plus tracing success/error behavior without logging middleware input.
-- [ ] Parse session-fixed configuration before World creation:
+- [x] Write focused tests first for default, review, and disabled URL configuration plus tracing success/error behavior without logging middleware input.
+- [x] Parse session-fixed configuration before World creation:
   - Default: approval enabled with `"direct"` variant.
   - `?variant=review`: approval enabled with `"review"` variant.
   - `?approval=off`: approval disabled and workspace read-only.
-- [ ] Create the workspace entity and attach feature configuration in `create-example.ts`; no feature slice reads URL globals directly.
-- [ ] Create one QueryClient, one World, one unique `InvoiceId` index, one query-options object, one query bridge, and one disposal function.
-- [ ] Pass the browser origin-derived API base URL to both slice API clients and the same base URL to the MSW handler factory.
-- [ ] Start the browser worker with `onUnhandledRequest: "error"` before creating observers or rendering.
-- [ ] Keep QueryClient, World, and the query bridge outside React `StrictMode` so StrictMode cannot recreate them.
-- [ ] Dispose the query bridge and clear the QueryClient on page teardown.
-- [ ] Add tracing middleware that records diagnostic function name, zero-based depth, elapsed duration, and success/error outcome through `console.info`.
-- [ ] Never log middleware input because it may contain invoice data or other sensitive values.
-- [ ] Return the exact `next()` result and rethrow the exact original error; nested-depth behavior remains a core unit-test contract rather than an application composition requirement.
-- [ ] Run `npx vitest run tests/invoice-example-bootstrap.test.ts`, `npm run typecheck`, and `npm run build:invoice`.
+- [x] Create the workspace entity and attach feature configuration in `create-example.ts`; no feature slice reads URL globals directly.
+- [x] Create one QueryClient, one World, one unique `InvoiceId` index, one query-options object, one query bridge, and one disposal function.
+- [x] Pass the browser origin-derived API base URL to both slice API clients and the same base URL to the MSW handler factory.
+- [x] Start the browser worker with `onUnhandledRequest: "error"` before creating observers or rendering.
+- [x] Keep QueryClient, World, and the query bridge outside React `StrictMode` so StrictMode cannot recreate them.
+- [x] Dispose the query bridge and clear the QueryClient on page teardown.
+- [x] Add tracing middleware that records diagnostic function name, zero-based depth, elapsed duration, and success/error outcome through `console.info`.
+- [x] Never log middleware input because it may contain invoice data or other sensitive values.
+- [x] Return the exact `next()` result and rethrow the exact original error; nested-depth behavior remains a core unit-test contract rather than an application composition requirement.
+- [x] Run `npx vitest run tests/invoice-example-bootstrap.test.ts`, `npm run typecheck`, and `npm run build:invoice`.
 
 ### Task 8: Build the UI and browser acceptance coverage
 
