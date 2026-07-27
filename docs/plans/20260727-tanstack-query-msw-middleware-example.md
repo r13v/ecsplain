@@ -290,21 +290,21 @@ Completion requires all of the following:
 - Create: `examples/invoice-approval/src/mocks/browser.ts`
 - Create: `tests/invoice-query-bridge.test.ts`
 
-- [ ] Write integration tests first with `setupServer`, an explicit `http://invoice.test/api/` base URL, a fresh store per test, and `retry: false`.
-- [ ] Add failing tests proving two query-specific observers cause one actual GET, a newer cache result reaches ECS, transient ECS state survives, and two different `setQueryData` values applied in the same tick are both considered rather than deduplicated by timestamp.
-- [ ] Define `createInvoiceApi(baseUrl: URL)` and build request URLs with `new URL(...)`; browser composition passes `new URL("/api/", window.location.origin)` and Vitest passes `new URL("http://invoice.test/api/")`.
-- [ ] Define the query key as `["invoices"]` and export typed query options with `staleTime: 30_000` and `retry: false`.
-- [ ] Pass the query function's TanStack Query `signal` into `fetch`, check `response.ok`, and parse the successful `InvoiceListResponse`.
-- [ ] Implement `startInvoiceQueryBridge` with a query-specific `QueryObserver`, not a subscription to the entire `QueryCache`.
-- [ ] Reconcile only successful results and compare the `data` reference with the last applied reference; do not use `dataUpdatedAt` as the deduplication identity.
-- [ ] Rely on monotonic `reconcileInvoices` as the final idempotency and stale-version guard.
-- [ ] Return an unsubscribe function from the bridge and dispose it on page teardown.
-- [ ] Keep the UI observer and bridge on the exact same query options object so TanStack Query deduplicates their HTTP request.
-- [ ] Implement a fresh in-memory mock invoice store factory so browser and tests do not leak mutable state across runs.
-- [ ] Add an MSW `GET /api/invoices` handler returning three stable invoices after an explicit `150 ms` delay.
-- [ ] Make the handler factory accept the API base URL and reuse it with `setupWorker` and `setupServer`; use `http`, `HttpResponse`, and `delay` from MSW 2.
-- [ ] Start and close `setupServer` in the test lifecycle and reset handler/store state between tests.
-- [ ] Run `npx vitest run tests/invoice-query-bridge.test.ts`, `npm run typecheck`, and `npm run build:invoice`.
+- [x] Write integration tests first with `setupServer`, an explicit `http://invoice.test/api/` base URL, a fresh store per test, and `retry: false`.
+- [x] Add failing tests proving two query-specific observers cause one actual GET, a newer cache result reaches ECS, transient ECS state survives, and two different `setQueryData` values applied in the same tick are both considered rather than deduplicated by timestamp.
+- [x] Define `createInvoiceApi(baseUrl: URL)` and build request URLs with `new URL(...)`; browser composition passes `new URL("/api/", window.location.origin)` and Vitest passes `new URL("http://invoice.test/api/")`.
+- [x] Define the query key as `["invoices"]` and export typed query options with `staleTime: 30_000` and `retry: false`.
+- [x] Pass the query function's TanStack Query `signal` into `fetch`, check `response.ok`, and parse the successful `InvoiceListResponse`.
+- [x] Implement `startInvoiceQueryBridge` with a query-specific `QueryObserver`, not a subscription to the entire `QueryCache`.
+- [x] Reconcile only successful results and compare the `data` reference with the last applied reference; do not use `dataUpdatedAt` as the deduplication identity.
+- [x] Rely on monotonic `reconcileInvoices` as the final idempotency and stale-version guard.
+- [x] Return an unsubscribe function from the bridge and dispose it on page teardown.
+- [x] Keep the UI observer and bridge on the exact same query options object so TanStack Query deduplicates their HTTP request.
+- [x] Implement a fresh in-memory mock invoice store factory so browser and tests do not leak mutable state across runs.
+- [x] Add an MSW `GET /api/invoices` handler returning three stable invoices after an explicit `150 ms` delay.
+- [x] Make the handler factory accept the API base URL and reuse it with `setupWorker` and `setupServer`; use `http`, `HttpResponse`, and `delay` from MSW 2.
+- [x] Start and close `setupServer` in the test lifecycle and reset handler/store state between tests.
+- [x] Run `npx vitest run tests/invoice-query-bridge.test.ts`, `npm run typecheck`, and `npm run build:invoice`.
 
 ### Task 6: Add the approval mutation adapter and race coverage
 
