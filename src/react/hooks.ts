@@ -1,6 +1,14 @@
-import { useSyncExternalStore } from "react"
+import { useMemo, useRef, useSyncExternalStore } from "react"
 import type { AnyComponentToken, ComponentData } from "../component"
-import type { Entity, QueryResult, SubscriptionScope } from "../world"
+import {
+	type AnyQueryResult,
+	type QueryDefinition,
+	type QueryResult,
+	type QueryTerms,
+	queryComponents,
+	resolveQueryTerms,
+} from "../query"
+import type { Entity, SubscriptionScope } from "../world"
 import { useWorld } from "./context"
 
 function readComponent<Token extends AnyComponentToken>(
@@ -49,11 +57,18 @@ export function useComponentSelector<Token extends AnyComponentToken, Selected>(
 	)
 }
 
-export function useQuery<
-	const Tokens extends readonly [AnyComponentToken, ...AnyComponentToken[]],
->(...components: Tokens): QueryResult<Tokens> {
+export function useQuery<const Terms extends QueryTerms>(
+	...terms: Terms
+): QueryResult<Terms>
+export function useQuery<const Terms extends QueryTerms>(
+	definition: QueryDefinition<Terms>,
+): QueryResult<Terms>
+export function useQuery(...input: readonly unknown[]): AnyQueryResult {
 	const world = useWorld()
-	const scope = { components } satisfies SubscriptionScope
+	const terms = resolveQueryTerms(input)
+	const scope = {
+		components: queryComponents(terms),
+	} satisfies SubscriptionScope
 	const readVersion = () => world.getVersion(scope)
 
 	useSyncExternalStore(
@@ -62,5 +77,64 @@ export function useQuery<
 		readVersion,
 	)
 
-	return world.query(...components)
+	return world.query(...terms)
+}
+
+export function useQuerySelector<const Terms extends QueryTerms, Selected>(
+	definition: QueryDefinition<Terms>,
+	selector: (rows: QueryResult<Terms>) => Selected,
+	isEqual: (left: Selected, right: Selected) => boolean = Object.is,
+): Selected {
+	const world = useWorld()
+	const selectorRef = useRef(selector)
+	const equalityRef = useRef(isEqual)
+	selectorRef.current = selector
+	equalityRef.current = isEqual
+
+	const externalStore = useMemo(() => {
+		const scope = {
+			components: queryComponents(definition.terms),
+		} satisfies SubscriptionScope
+		let hasSelection = false
+		let version = -1
+		let selectedBy: typeof selector | undefined
+		let comparedBy: typeof isEqual | undefined
+		let selection: Selected
+
+		const read = (): Selected => {
+			const nextVersion = world.getVersion(scope)
+			const currentSelector = selectorRef.current
+			const currentEquality = equalityRef.current
+
+			if (
+				!hasSelection ||
+				version !== nextVersion ||
+				selectedBy !== currentSelector ||
+				comparedBy !== currentEquality
+			) {
+				const nextSelection = currentSelector(world.query(definition))
+				if (!hasSelection || !currentEquality(selection, nextSelection)) {
+					selection = nextSelection
+				}
+
+				hasSelection = true
+				version = nextVersion
+				selectedBy = currentSelector
+				comparedBy = currentEquality
+			}
+
+			return selection
+		}
+
+		return {
+			read,
+			subscribe: (listener: () => void) => world.subscribe(listener, scope),
+		}
+	}, [definition, world])
+
+	return useSyncExternalStore(
+		externalStore.subscribe,
+		externalStore.read,
+		externalStore.read,
+	)
 }

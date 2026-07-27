@@ -31,10 +31,7 @@ export const setTableFilters: System<SetFiltersInput, boolean> = (
 		return false
 	}
 
-	const current = world.get(table, TableFilters)
-	if (current === undefined) {
-		throw new Error("The table is missing filter state")
-	}
+	const current = world.require(table, TableFilters)
 
 	world.set(table, TableFilters, { ...current, ...patch })
 	clearSelectionState(world, table)
@@ -50,11 +47,8 @@ export const toggleTableSort: System<ToggleSortInput, boolean> = (
 		return false
 	}
 
-	const columnData = world.get(column, TableColumn)
-	const current = world.get(table, TableSort)
-	if (columnData === undefined || current === undefined) {
-		throw new Error("The table is missing column or sort state")
-	}
+	const columnData = world.require(column, TableColumn)
+	const current = world.require(table, TableSort)
 
 	world.set(table, TableSort, {
 		column: columnData.key,

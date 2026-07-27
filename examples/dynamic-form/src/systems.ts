@@ -1,7 +1,8 @@
 import type { Entity, System, World } from "ecsplain"
 import {
 	ActiveField,
-	DeliveryBranch,
+	ActiveFormFields,
+	DeliveryBranches,
 	type DeliveryMethod,
 	FieldError,
 	type FieldName,
@@ -28,12 +29,12 @@ function clearFeedback(world: World, form: Entity): void {
 }
 
 function deliveryMethod(world: World): DeliveryMethod {
-	for (const [field, definition] of world.query(FormField)) {
+	for (const [, definition, fieldValue] of world.query(FormField, FieldValue)) {
 		if (definition.name !== "deliveryMethod") {
 			continue
 		}
 
-		const value = world.get(field, FieldValue)?.value
+		const value = fieldValue.value
 		if (value === "courier" || value === "pickup") {
 			return value
 		}
@@ -45,10 +46,10 @@ function deliveryMethod(world: World): DeliveryMethod {
 export const syncDeliveryBranch: System = world => {
 	const method = deliveryMethod(world)
 
-	for (const [field, branch] of world.query(DeliveryBranch)) {
-		if (branch.method === method) {
+	for (const [field, branch, active] of world.query(DeliveryBranches)) {
+		if (branch.method === method && active === undefined) {
 			world.set(field, ActiveField, true)
-		} else {
+		} else if (branch.method !== method && active !== undefined) {
 			world.remove(field, ActiveField)
 		}
 	}
@@ -58,10 +59,7 @@ export const changeFieldValue: System<ChangeFieldValueInput> = (
 	world,
 	{ form, field, value },
 ) => {
-	const definition = world.get(field, FormField)
-	if (definition === undefined) {
-		throw new Error("Cannot change an entity that is not a form field")
-	}
+	const definition = world.require(field, FormField)
 
 	world.set(field, FieldValue, { value })
 	clearFeedback(world, form)
@@ -80,11 +78,7 @@ export const submitDeliveryForm: System<FormInput, boolean> = (
 	const values: Partial<Record<FieldName, string>> = {}
 	let valid = true
 
-	for (const [field, definition, fieldValue] of world.query(
-		FormField,
-		FieldValue,
-		ActiveField,
-	)) {
+	for (const [field, definition, fieldValue] of world.query(ActiveFormFields)) {
 		const value = fieldValue.value.trim()
 		if (value.length === 0) {
 			world.set(field, FieldError, {

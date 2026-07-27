@@ -1,15 +1,18 @@
 import type { Entity } from "ecsplain"
-import { useComponent, useQuery, useWorld } from "ecsplain/react"
+import { useComponent, useQuerySelector, useWorld } from "ecsplain/react"
 import type { ChangeEvent } from "react"
 import { roles, statuses } from "./columns"
-import { SelectedCell, TableFilters, type TableFiltersData } from "./model"
+import { SelectedCells, TableFilters, type TableFiltersData } from "./model"
 import { clearSelection } from "./selection-systems"
 import { TableGrid } from "./TableGrid"
 import { resetTable, setTableFilters } from "./table-systems"
 
 function SelectionToolbar({ table }: { readonly table: Entity }) {
 	const world = useWorld()
-	const selectedCount = useQuery(SelectedCell).length
+	const selectedCount = useQuerySelector(
+		SelectedCells,
+		selectedCells => selectedCells.length,
+	)
 
 	return (
 		<div className="table-toolbar">

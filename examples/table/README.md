@@ -37,9 +37,12 @@ React does not filter, sort, or group entities.
 
 The cell renderer uses `useComponentSelector` to read one field from
 `UserRow`. Selection changes stay scoped to affected cells and the selection
-toolbar. A committed edit also rebuilds `TableView` because it may change
-filter membership or sort order, so that structural update can rerender the
-table container.
+toolbar. The toolbar uses `useQuerySelector` over the reusable `SelectedCells`
+query, so replacing selection component data without changing the count would
+not rerender it. Bootstrap uses `world.spawn`, and systems use `world.require`
+where table state is an invariant. A committed edit also rebuilds `TableView`
+because it may change filter membership or sort order, so that structural
+update can rerender the table container.
 
 This example creates one table per world. Supporting multiple tables in one
 world requires an ownership component on rows, columns, and cells.

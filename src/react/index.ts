@@ -3,4 +3,5 @@ export {
 	useComponent,
 	useComponentSelector,
 	useQuery,
+	useQuerySelector,
 } from "./hooks"

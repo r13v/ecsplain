@@ -15,29 +15,26 @@ import { rebuildTableView } from "./view-system"
 
 export function createTableExample(rowCount = 200): TableExample {
 	const world = createWorld()
-	const table = world.create()
-
-	world.run(currentWorld => {
-		currentWorld.set(table, TableFilters, DEFAULT_FILTERS)
-		currentWorld.set(table, TableSort, DEFAULT_SORT)
+	const table = world.run(currentWorld => {
+		const table = currentWorld.spawn(
+			[TableFilters, DEFAULT_FILTERS],
+			[TableSort, DEFAULT_SORT],
+		)
 
 		const columns = columnDefinitions.map(definition => {
-			const column = currentWorld.create()
-			currentWorld.set(column, TableColumn, definition)
-			return column
+			return currentWorld.spawn([TableColumn, definition])
 		})
 
 		for (const user of createUsers(rowCount)) {
-			const row = currentWorld.create()
-			currentWorld.set(row, UserRow, user)
+			const row = currentWorld.spawn([UserRow, user])
 
 			for (const column of columns) {
-				const cell = currentWorld.create()
-				currentWorld.set(cell, TableCell, { row, column })
+				currentWorld.spawn([TableCell, { row, column }])
 			}
 		}
 
 		currentWorld.run(rebuildTableView, { table })
+		return table
 	})
 
 	return { world, table }

@@ -2,7 +2,7 @@ import type { Entity } from "ecsplain"
 import { useComponent, useQuery, useWorld } from "ecsplain/react"
 import type { ChangeEvent, FormEvent } from "react"
 import {
-	ActiveField,
+	ActiveFormFields,
 	FieldError,
 	FieldValue,
 	FormField,
@@ -76,7 +76,7 @@ function FieldControl({
 
 export function App({ form }: { readonly form: Entity }) {
 	const world = useWorld()
-	const fields = useQuery(FormField, FieldValue, ActiveField)
+	const fields = useQuery(ActiveFormFields)
 	const submission = useComponent(form, FormSubmission)
 
 	const submit = (event: FormEvent<HTMLFormElement>) => {

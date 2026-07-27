@@ -1,4 +1,4 @@
-import { defineComponent, type Entity, type World } from "ecsplain"
+import { defineComponent, defineQuery, type Entity, type World } from "ecsplain"
 
 export type Role = "Admin" | "Editor" | "Viewer"
 export type Status = "Active" | "Inactive"
@@ -85,6 +85,7 @@ export const SelectionGesture =
 	defineComponent<SelectionGestureData>("SelectionGesture")
 export const CellDraft = defineComponent<CellDraftData>("CellDraft")
 export const CellError = defineComponent<CellErrorData>("CellError")
+export const SelectedCells = defineQuery(SelectedCell)
 
 export const DEFAULT_FILTERS: TableFiltersData = Object.freeze({
 	search: "",

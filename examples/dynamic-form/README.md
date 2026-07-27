@@ -20,13 +20,15 @@ Every field is an entity with:
 - optional `DeliveryBranch` and `FieldError` components.
 
 The delivery method system adds or removes `ActiveField` from courier and
-pickup branch entities. Branch values remain in `FieldValue`, so switching back
+pickup branch entities. Its reusable `DeliveryBranches` query reads
+`ActiveField` through `optional`, so the system avoids writes when membership
+is already correct. Branch values remain in `FieldValue`, so switching back
 restores the user's input.
 
-The submit system queries only `FormField + FieldValue + ActiveField`.
-Inactive values are neither validated nor included in the `FormSubmission`
-component. React simply renders that query and translates control changes into
-system inputs.
+Bootstrap creates complete field entities with `world.spawn`. The submit
+system and React share the `ActiveFormFields` query defined with `defineQuery`;
+inactive values are neither validated nor included in the `FormSubmission`
+component. React translates control changes into system inputs.
 
 This example creates one form per world. Supporting multiple forms in one
 world requires an ownership component on field entities.

@@ -6,9 +6,25 @@ export {
 	defineComponent,
 } from "./component"
 export {
+	defineQuery,
+	type OptionalTerm,
+	optional,
+	type QueryDefinition,
+	type QueryItem,
+	type QueryResult,
+	type QueryTerm,
+	type QueryTerms,
+	type WithoutTerm,
+	without,
+} from "./query"
+export type {
+	SecondaryIndex,
+	UniqueSecondaryIndex,
+} from "./secondary-index"
+export {
+	type ComponentEntry,
 	createWorld,
 	type Entity,
-	type QueryResult,
 	type SubscriptionScope,
 	type System,
 	type World,

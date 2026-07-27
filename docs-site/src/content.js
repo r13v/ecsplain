@@ -233,12 +233,13 @@ export const lessons = {
 				"Systems are synchronous and compose through world.run.",
 			],
 			code: `const world = createWorld()
-const task = world.create()
-
-world.set(task, Task, {
-  title: "Learn ECSplain",
-  completed: false,
-})`,
+const task = world.spawn([
+  Task,
+  {
+    title: "Learn ECSplain",
+    completed: false,
+  },
+])`,
 		},
 		ru: {
 			eyebrow: "Начните здесь",
@@ -255,12 +256,13 @@ world.set(task, Task, {
 				"Системы синхронны и компонуются через world.run.",
 			],
 			code: `const world = createWorld()
-const task = world.create()
-
-world.set(task, Task, {
-  title: "Изучить ECSplain",
-  completed: false,
-})`,
+const task = world.spawn([
+  Task,
+  {
+    title: "Изучить ECSplain",
+    completed: false,
+  },
+])`,
 		},
 	},
 	entities: {
@@ -278,11 +280,12 @@ world.set(task, Task, {
 				"Do not use array indexes as durable identity.",
 				"Make deletion repair dependent state explicitly.",
 			],
-			code: `const row = world.create()
-const column = world.create()
-const cell = world.create()
-
-world.set(cell, TableCell, { row, column })`,
+			code: `const row = world.spawn([UserRow, user])
+const column = world.spawn([TableColumn, definition])
+const cell = world.spawn([
+  TableCell,
+  { row, column },
+])`,
 		},
 		ru: {
 			eyebrow: "Основа",
@@ -298,11 +301,12 @@ world.set(cell, TableCell, { row, column })`,
 				"Не используйте индекс массива как постоянный ID.",
 				"После удаления явно восстанавливайте зависимое состояние.",
 			],
-			code: `const row = world.create()
-const column = world.create()
-const cell = world.create()
-
-world.set(cell, TableCell, { row, column })`,
+			code: `const row = world.spawn([UserRow, user])
+const column = world.spawn([TableColumn, definition])
+const cell = world.spawn([
+  TableCell,
+  { row, column },
+])`,
 		},
 	},
 	components: {
@@ -352,42 +356,52 @@ world.set(cell, SelectedCell, true)`,
 			eyebrow: "Foundation",
 			title: "Query entities by capability",
 			subtitle:
-				"A query returns a deterministic snapshot of entities that have every requested component.",
+				"A query returns a deterministic snapshot selected by required, optional, and excluded component terms.",
 			paragraphs: [
-				"Combining tokens narrows the result. The tuple contains the entity followed by component values in the same order as the query.",
-				"Snapshots are ordered by entity ID and remain safe to iterate while a system changes the world.",
+				"Normal tokens are required. optional(token) returns data without requiring it, while without(token) excludes matching entities.",
+				"defineQuery creates a reusable immutable descriptor. Snapshots stay ordered by entity ID and safe to iterate while a system changes the world.",
 			],
 			takeaways: [
 				"Query for capabilities, not object classes.",
-				"Use ActiveField or SelectedCell to change result membership.",
+				"Share defineQuery descriptors between systems and React.",
 				"Queries are snapshots, not cached live collections.",
 			],
-			code: `for (const [cell, address] of world.query(
-  TableCell,
-  SelectedCell,
+			code: `const VisibleRows = defineQuery(
+  UserRow,
+  optional(SelectedRow),
+  without(Archived),
+)
+
+for (const [row, data, selected] of world.query(
+  VisibleRows,
 )) {
-  console.log(cell, address.row, address.column)
+  console.log(row, data.name, selected === true)
 }`,
 		},
 		ru: {
 			eyebrow: "Основа",
 			title: "Запрашивайте entities по возможностям",
 			subtitle:
-				"Query возвращает детерминированный snapshot entities, у которых есть все запрошенные компоненты.",
+				"Query возвращает детерминированный snapshot по required, optional и excluded component terms.",
 			paragraphs: [
-				"Комбинация tokens сужает результат. Tuple содержит entity, а затем значения компонентов в порядке query.",
-				"Snapshots отсортированы по entity ID, их безопасно перебирать, пока система изменяет world.",
+				"Обычные tokens обязательны. optional(token) возвращает данные, не требуя компонент, а without(token) исключает совпавшие entities.",
+				"defineQuery создаёт переиспользуемый immutable descriptor. Snapshots остаются отсортированными по entity ID и безопасными при изменениях world.",
 			],
 			takeaways: [
 				"Запрашивайте возможности, а не классы объектов.",
-				"ActiveField и SelectedCell меняют состав результата.",
+				"Переиспользуйте defineQuery в systems и React.",
 				"Query — snapshot, а не кешированная live-коллекция.",
 			],
-			code: `for (const [cell, address] of world.query(
-  TableCell,
-  SelectedCell,
+			code: `const VisibleRows = defineQuery(
+  UserRow,
+  optional(SelectedRow),
+  without(Archived),
+)
+
+for (const [row, data, selected] of world.query(
+  VisibleRows,
 )) {
-  console.log(cell, address.row, address.column)
+  console.log(row, data.name, selected === true)
 }`,
 		},
 	},
@@ -460,23 +474,23 @@ world.run(toggleSelection, { cell: e2 })`,
 			subtitle:
 				"React translates browser events into system inputs and renders scoped snapshots from the world.",
 			paragraphs: [
-				"WorldProvider exposes one world. useQuery subscribes by component tokens, while useComponent targets one entity-token pair.",
-				"useComponentSelector reads one field from a larger record and avoids a rerender when the selected snapshot remains Object.is-equal.",
+				"WorldProvider exposes one world. useQuery subscribes to every term in a query descriptor, while useComponent targets one entity-token pair.",
+				"useComponentSelector selects from one component. useQuerySelector selects from reusable query rows and avoids a rerender when the result stays equal.",
 			],
 			takeaways: [
 				"Keep browser handlers thin.",
 				"Place subscriptions close to their consumers.",
 				"Do not repair ECS state from React effects.",
 			],
-			code: `function Cell({ cell, row }) {
-  const selected = useComponent(cell, SelectedCell) === true
-  const email = useComponentSelector(
-    row,
-    UserRow,
-    user => user.email,
+			code: `const SelectedCells = defineQuery(SelectedCell)
+
+function SelectionCount() {
+  const count = useQuerySelector(
+    SelectedCells,
+    rows => rows.length,
   )
 
-  return <button aria-pressed={selected}>{email}</button>
+  return <output>{count}</output>
 }`,
 		},
 		ru: {
@@ -485,23 +499,23 @@ world.run(toggleSelection, { cell: e2 })`,
 			subtitle:
 				"React переводит browser events во входы систем и отображает точечные snapshots из world.",
 			paragraphs: [
-				"WorldProvider предоставляет world. useQuery подписывается по component tokens, а useComponent — на пару entity-token.",
-				"useComponentSelector выбирает одно поле записи и не вызывает render, если snapshot остался Object.is-equal.",
+				"WorldProvider предоставляет world. useQuery подписывается на все terms query descriptor, а useComponent — на пару entity-token.",
+				"useComponentSelector выбирает данные одного компонента. useQuerySelector выбирает значение из строк reusable query и не рендерит при равном результате.",
 			],
 			takeaways: [
 				"Browser handlers должны быть тонкими.",
 				"Размещайте подписки рядом с потребителями.",
 				"Не исправляйте ECS-состояние из React effects.",
 			],
-			code: `function Cell({ cell, row }) {
-  const selected = useComponent(cell, SelectedCell) === true
-  const email = useComponentSelector(
-    row,
-    UserRow,
-    user => user.email,
+			code: `const SelectedCells = defineQuery(SelectedCell)
+
+function SelectionCount() {
+  const count = useQuerySelector(
+    SelectedCells,
+    rows => rows.length,
   )
 
-  return <button aria-pressed={selected}>{email}</button>
+  return <output>{count}</output>
 }`,
 		},
 	},
@@ -535,10 +549,15 @@ const CellDraft = defineComponent<{ value: string }>("CellDraft")`,
 			"Каждое поле — entity с metadata, сохранённым FieldValue и ActiveField, когда поле входит в текущую структуру.",
 			"Смена способа доставки добавляет или удаляет ActiveField. Скрытые значения остаются в world, а validation и submit запрашивают только активные поля.",
 		],
-		code: `for (const [field, branch] of world.query(DeliveryBranch)) {
-  if (branch.method === method) {
+		code: `const Branches = defineQuery(
+  DeliveryBranch,
+  optional(ActiveField),
+)
+
+for (const [field, branch, active] of world.query(Branches)) {
+  if (branch.method === method && !active) {
     world.set(field, ActiveField, true)
-  } else {
+  } else if (branch.method !== method && active) {
     world.remove(field, ActiveField)
   }
 }`,
@@ -567,20 +586,24 @@ const CellDraft = defineComponent<{ value: string }>("CellDraft")`,
 	crud: {
 		en: [
 			"Keep saved Customer data separate from CustomerDraft. The list reads saved data while the detail editor owns a reversible draft.",
-			"Create and delete systems must also repair selection, relationships, and any derived list view.",
+			"Keep external IDs in scalar components. A unique secondary index provides lookup and rejects duplicates; delete systems still repair dependent state explicitly.",
 		],
 		ru: [
 			"Разделяйте сохранённый Customer и CustomerDraft. Список читает saved data, а detail editor работает с отменяемым draft.",
-			"Системы create и delete также восстанавливают selection, relationships и derived list view.",
+			"Храните внешние ID в scalar components. Unique secondary index даёт lookup и запрещает дубликаты; delete systems явно восстанавливают зависимое состояние.",
 		],
-		code: `const beginEdit: System<{ customer: Entity }> = (
-  world,
-  { customer },
-) => {
-  const saved = world.get(customer, Customer)
-  if (!saved) throw new Error("Missing Customer")
-  world.set(customer, CustomerDraft, { ...saved })
-}`,
+		code: `const CustomerId = defineComponent<string>("CustomerId")
+const customersById = world.index(CustomerId, {
+  unique: true,
+})
+
+const customer = world.spawn(
+  [CustomerId, "customer-42"],
+  [Customer, saved],
+)
+
+world.require(customer, Customer)
+customersById.get("customer-42")`,
 	},
 	optimistic: {
 		en: [
@@ -753,11 +776,11 @@ world.remove(panel, Expanded)`,
 	boundaries: {
 		en: [
 			"ECSplain is deliberately synchronous: no scheduler, automatic rollback, live queries, resource API, or cascade deletion.",
-			"Async and browser effects live in adapters. Derived state and relationship ownership remain explicit application responsibilities.",
+			"Secondary indexes provide lookup by complete component value, not relationship ownership. Async effects, derived state, and lifecycle rules remain explicit application responsibilities.",
 		],
 		ru: [
 			"ECSplain намеренно синхронный: без scheduler, automatic rollback, live queries, resource API и cascade deletion.",
-			"Async и browser effects живут в adapters. Derived state и ownership связей остаются обязанностью приложения.",
+			"Secondary indexes дают lookup по полному значению компонента, но не ownership. Async effects, derived state и lifecycle rules остаются явной ответственностью приложения.",
 		],
 		code: `world.run(systemThatWritesThenThrows)
 
