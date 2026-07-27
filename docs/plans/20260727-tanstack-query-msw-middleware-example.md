@@ -214,16 +214,16 @@ Completion requires all of the following:
 - Create: `examples/invoice-approval/src/main.tsx`
 - Create: `examples/invoice-approval/src/styles.css`
 
-- [ ] Install exact dev dependencies with `npm install --save-dev --save-exact @tanstack/react-query@5.101.4 msw@2.15.0`.
-- [ ] Add `dev:invoice` using `vite examples/invoice-approval --config vite.config.ts`.
-- [ ] Add `build:invoice` using `vite build examples/invoice-approval --config vite.config.ts`.
-- [ ] Include `build:invoice` in `build:examples`.
-- [ ] Add a third Playwright `webServer` entry on `127.0.0.1:4175` with `--strictPort`.
-- [ ] Generate the MSW worker with `npx msw init examples/invoice-approval/public --save`; retain the generated file unchanged.
-- [ ] Preserve the worker directory recorded by MSW in `package.json`.
-- [ ] Add `"**"` and the force-ignore pattern `"!!examples/invoice-approval/public/mockServiceWorker.js"` to `biome.json` `files.includes` so generated code is not formatted or linted.
-- [ ] Create an accessible HTML root and minimal React entry point that can await MSW startup before rendering.
-- [ ] Run `npm run build:invoice`, `npm run check`, and `npm run typecheck`.
+- [x] Install exact dev dependencies with `npm install --save-dev --save-exact @tanstack/react-query@5.101.4 msw@2.15.0`.
+- [x] Add `dev:invoice` using `vite examples/invoice-approval --config vite.config.ts`.
+- [x] Add `build:invoice` using `vite build examples/invoice-approval --config vite.config.ts`.
+- [x] Include `build:invoice` in `build:examples`.
+- [x] Add a third Playwright `webServer` entry on `127.0.0.1:4175` with `--strictPort`.
+- [x] Generate the MSW worker with `npx msw init examples/invoice-approval/public --save`; retain the generated file unchanged.
+- [x] Preserve the worker directory recorded by MSW in `package.json`.
+- [x] Add `"**"` and the force-ignore pattern `"!!examples/invoice-approval/public/mockServiceWorker.js"` to `biome.json` `files.includes` so generated code is not formatted or linted.
+- [x] Create an accessible HTML root and minimal React entry point that can await MSW startup before rendering.
+- [x] Run `npm run build:invoice`, `npm run check`, and `npm run typecheck`.
 
 ### Task 3: Build monotonic ECS invoice reconciliation
 
