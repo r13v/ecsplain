@@ -47,14 +47,12 @@ function parseInvoiceListResponse(value: unknown): InvoiceListResponse {
 export function parseInvoiceDto(value: unknown): InvoiceDto {
 	if (
 		!isRecord(value) ||
-		typeof value.id !== "string" ||
+		!isNonBlankString(value.id) ||
 		typeof value.number !== "string" ||
 		typeof value.vendor !== "string" ||
-		typeof value.amountCents !== "number" ||
-		!Number.isInteger(value.amountCents) ||
+		!isNonNegativeSafeInteger(value.amountCents) ||
 		!isInvoiceStatus(value.status) ||
-		typeof value.version !== "number" ||
-		!Number.isInteger(value.version) ||
+		!isNonNegativeSafeInteger(value.version) ||
 		typeof value.canApprove !== "boolean"
 	) {
 		throw invalidInvoiceResponse()
@@ -73,6 +71,14 @@ export function parseInvoiceDto(value: unknown): InvoiceDto {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value)
+}
+
+function isNonBlankString(value: unknown): value is string {
+	return typeof value === "string" && value.trim().length > 0
+}
+
+function isNonNegativeSafeInteger(value: unknown): value is number {
+	return typeof value === "number" && Number.isSafeInteger(value) && value >= 0
 }
 
 function isInvoiceStatus(value: unknown): value is InvoiceStatus {

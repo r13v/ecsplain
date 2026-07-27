@@ -53,8 +53,9 @@ export const requestInvoiceApproval: System<
 		return undefined
 	}
 
+	const variant = world.require(workspace, ApprovalVariant)
 	world.remove(invoice, ApprovalError)
-	if (world.require(workspace, ApprovalVariant) === "review") {
+	if (variant === "review") {
 		world.set(invoice, ApprovalReview, true)
 		return undefined
 	}
