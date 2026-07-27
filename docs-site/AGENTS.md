@@ -13,5 +13,6 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 - Visual target: the selected “Interactive Systems Lab” Product Design mock.
 - Documentation must support complete English and Russian UI and content.
 - The language switch is persistent and both locales have stable hash URLs.
+- A first visit without a hash or saved locale opens `#/en/overview`.
 - The primary learning interaction is a runnable ECS system with a live world inspector.
 - The final publishing target is GitHub Pages.

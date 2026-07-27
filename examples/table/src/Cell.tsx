@@ -59,9 +59,10 @@ export function Cell({
 		columnBehaviors[columnKey].read(user),
 	)
 	const editorRef = useRef<HTMLInputElement | HTMLSelectElement>(null)
+	const editing = draft !== undefined
 
 	useEffect(() => {
-		if (draft === undefined) {
+		if (!editing) {
 			return
 		}
 
@@ -69,7 +70,7 @@ export function Cell({
 		if (editorRef.current instanceof HTMLInputElement) {
 			editorRef.current.select()
 		}
-	}, [draft])
+	}, [editing])
 
 	if (address === undefined || metadata === undefined || value === undefined) {
 		throw new Error("A rendered cell is missing its ECS data")
@@ -145,7 +146,7 @@ export function Cell({
 			data-cell={cell}
 			data-testid={`cell-${rowIndex}-${columnIndex}`}
 		>
-			{draft === undefined ? (
+			{!editing ? (
 				<button
 					type="button"
 					className="cell-button"
