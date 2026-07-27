@@ -261,20 +261,20 @@ Completion requires all of the following:
 - Create: `examples/invoice-approval/src/features/invoice-approval/index.ts`
 - Create: `tests/invoice-approval-systems.test.ts`
 
-- [ ] Write failing tests first for direct approval, review/confirm/cancel, disabled rollout, missing capability, already-approved invoices, and rejection of a duplicate request while the invoice is pending.
-- [ ] Add failing tests proving approval success clears transient state, delegates to the workspace snapshot system, returns whether the snapshot was applied, and never regresses a newer snapshot.
-- [ ] Add a focused test proving list reconciliation cannot remove `ApprovalReview`, `PendingApproval`, or `ApprovalError`.
-- [ ] Add failing tests proving approval failure clears pending state, preserves the last accepted server snapshot, and attaches the normalized server message.
-- [ ] Define approval-owned `ApprovalEnabled`, `ApprovalVariant`, `ApprovalReview`, `PendingApproval`, and `ApprovalError`.
-- [ ] Store `ApprovalEnabled` and `ApprovalVariant` on the stable workspace entity; use variants `"direct"` and `"review"`.
-- [ ] Implement `requestInvoiceApproval`: validate rollout, capability, current server status, and absence of `PendingApproval`; add pending state and return an approval command for `"direct"`, or add review state for `"review"`.
-- [ ] Implement `confirmInvoiceApprovalReview` and `cancelInvoiceApprovalReview`; confirmation adds pending state and returns the same approval command shape used by the direct path.
-- [ ] Do not introduce a mutation ID: `PendingApproval` prevents a second in-flight request for the same invoice.
-- [ ] Implement `applyInvoiceApprovalSuccess` to validate the returned invoice ID, run workspace-owned `applyInvoiceSnapshot`, clear pending/review/error state, and return `{ applied: boolean }` to the remote adapter.
-- [ ] Implement `applyInvoiceApprovalFailure` to clear pending state, preserve the snapshot, and attach a visible error message.
-- [ ] Keep shared mechanical logic as local helper functions rather than creating single-use systems.
-- [ ] Ensure test names explain why background or mutation responses cannot regress accepted state.
-- [ ] Run `npx vitest run tests/invoice-approval-systems.test.ts` and `npm run typecheck`.
+- [x] Write failing tests first for direct approval, review/confirm/cancel, disabled rollout, missing capability, already-approved invoices, and rejection of a duplicate request while the invoice is pending.
+- [x] Add failing tests proving approval success clears transient state, delegates to the workspace snapshot system, returns whether the snapshot was applied, and never regresses a newer snapshot.
+- [x] Add a focused test proving list reconciliation cannot remove `ApprovalReview`, `PendingApproval`, or `ApprovalError`.
+- [x] Add failing tests proving approval failure clears pending state, preserves the last accepted server snapshot, and attaches the normalized server message.
+- [x] Define approval-owned `ApprovalEnabled`, `ApprovalVariant`, `ApprovalReview`, `PendingApproval`, and `ApprovalError`.
+- [x] Store `ApprovalEnabled` and `ApprovalVariant` on the stable workspace entity; use variants `"direct"` and `"review"`.
+- [x] Implement `requestInvoiceApproval`: validate rollout, capability, current server status, and absence of `PendingApproval`; add pending state and return an approval command for `"direct"`, or add review state for `"review"`.
+- [x] Implement `confirmInvoiceApprovalReview` and `cancelInvoiceApprovalReview`; confirmation adds pending state and returns the same approval command shape used by the direct path.
+- [x] Do not introduce a mutation ID: `PendingApproval` prevents a second in-flight request for the same invoice.
+- [x] Implement `applyInvoiceApprovalSuccess` to validate the returned invoice ID, run workspace-owned `applyInvoiceSnapshot`, clear pending/review/error state, and return `{ applied: boolean }` to the remote adapter.
+- [x] Implement `applyInvoiceApprovalFailure` to clear pending state, preserve the snapshot, and attach a visible error message.
+- [x] Keep shared mechanical logic as local helper functions rather than creating single-use systems.
+- [x] Ensure test names explain why background or mutation responses cannot regress accepted state.
+- [x] Run `npx vitest run tests/invoice-approval-systems.test.ts` and `npm run typecheck`.
 
 ### Task 5: Add the Query/MSW list boundary and scoped bridge
 
