@@ -7,18 +7,14 @@ import { resolveInvoiceExampleConfig } from "./app/config"
 import { createInvoiceExample } from "./app/create-example"
 import "./styles.css"
 
-async function startMockWorker(apiBaseUrl: URL): Promise<() => void> {
-	const { startInvoiceMockWorker } = await import("./mocks/browser")
-	return startInvoiceMockWorker(apiBaseUrl)
-}
-
 const rootElement = document.getElementById("root")
 if (rootElement === null) {
 	throw new Error("The invoice approval example requires a #root element")
 }
 
 const apiBaseUrl = new URL("/api/", window.location.origin)
-const stopMockWorker = await startMockWorker(apiBaseUrl)
+const { startInvoiceMockWorker } = await import("./mocks/browser")
+const stopMockWorker = await startInvoiceMockWorker(apiBaseUrl)
 const example = createInvoiceExample({
 	apiBaseUrl,
 	config: resolveInvoiceExampleConfig(new URL(window.location.href)),

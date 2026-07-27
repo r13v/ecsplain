@@ -118,6 +118,41 @@ describe("invoice approval systems", () => {
 		expect(world.get(invoiceEntity, ApprovalReview)).toBeUndefined()
 	})
 
+	it("clears stale review state when capability disappears before confirmation", () => {
+		const { world, workspace, workspaceEntity, invoiceEntity } =
+			createApprovalFixture({
+				variant: "review",
+			})
+		world.run(requestInvoiceApproval, {
+			workspace: workspaceEntity,
+			invoice: invoiceEntity,
+		})
+
+		world.run(reconcileInvoices, {
+			workspace,
+			response: {
+				items: [
+					invoice({
+						status: "approved",
+						version: 2,
+						canApprove: false,
+					}),
+				],
+			},
+		})
+		const command = world.run(confirmInvoiceApprovalReview, {
+			invoice: invoiceEntity,
+		})
+
+		expect(command).toBeUndefined()
+		expect(world.get(invoiceEntity, ApprovalReview)).toBeUndefined()
+		expect(world.get(invoiceEntity, PendingApproval)).toBeUndefined()
+		expect(world.require(invoiceEntity, InvoiceSnapshot)).toMatchObject({
+			status: "approved",
+			version: 2,
+		})
+	})
+
 	it("rejects disabled rollout, missing capability, approved invoices, and duplicate pending requests", () => {
 		const disabled = createApprovalFixture({ approvalEnabled: false })
 		expect(

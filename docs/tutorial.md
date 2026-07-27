@@ -1554,8 +1554,15 @@ The repository examples are covered in:
 - [`tests/react.test.tsx`](../tests/react.test.tsx);
 - [`tests/table-systems.test.ts`](../tests/table-systems.test.ts);
 - [`tests/form-systems.test.ts`](../tests/form-systems.test.ts);
+- [`tests/invoice-reconciliation.test.ts`](../tests/invoice-reconciliation.test.ts);
+- [`tests/invoice-approval-systems.test.ts`](../tests/invoice-approval-systems.test.ts);
+- [`tests/invoice-query-bridge.test.ts`](../tests/invoice-query-bridge.test.ts);
+- [`tests/invoice-approval-mutation.test.ts`](../tests/invoice-approval-mutation.test.ts);
+- [`tests/invoice-example-bootstrap.test.ts`](../tests/invoice-example-bootstrap.test.ts);
+- [`tests/invoice-workspace-ui.test.tsx`](../tests/invoice-workspace-ui.test.tsx);
 - [`e2e/table.spec.ts`](../e2e/table.spec.ts);
-- [`e2e/dynamic-form.spec.ts`](../e2e/dynamic-form.spec.ts).
+- [`e2e/dynamic-form.spec.ts`](../e2e/dynamic-form.spec.ts);
+- [`e2e/invoice-approval.spec.ts`](../e2e/invoice-approval.spec.ts).
 
 Run them with:
 

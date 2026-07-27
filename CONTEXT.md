@@ -16,6 +16,12 @@ _Avoid_: Component class, string key
 **System**: Behavior that selects entities by their components and updates the world.
 _Avoid_: Component method
 
+**System Middleware**: Synchronous observing code around an explicitly-run system. It must call `next()` exactly once and cannot replace input, result, or thrown value.
+_Avoid_: Scheduler, transaction, effect handler
+
+**System Execution**: The readonly context passed to system middleware: non-callable system identity, unchanged input, and zero-based nested run depth.
+_Avoid_: Command object, mutable request
+
 **Query**: A deterministic snapshot selected by required, optional, and excluded component terms. It returns the entity, required values, and optional values.
 _Avoid_: Live query, selector
 
@@ -51,3 +57,9 @@ _Avoid_: Transaction
 
 **World**: The owner of entities and their components, through which systems observe and update ECS state.
 _Avoid_: React store
+
+**Server Snapshot**: Immutable DTO-derived component data accepted into ECS only when its per-record server version is newer than the stored snapshot.
+_Avoid_: Optimistic state, Query cache data
+
+**Capability Component**: Server-derived ECS data that says whether a user action is currently available for one entity.
+_Avoid_: Feature flag, permission check

@@ -10,12 +10,10 @@ interface SystemTraceEvent {
 }
 
 export interface CreateTracingMiddlewareOptions {
-	readonly log?: (event: SystemTraceEvent) => void
 	readonly now?: () => number
 }
 
 export function createTracingMiddleware({
-	log = logTraceEvent,
 	now = currentTime,
 }: CreateTracingMiddlewareOptions = {}): SystemMiddleware {
 	return (execution, next) => {
@@ -23,7 +21,7 @@ export function createTracingMiddleware({
 
 		try {
 			const result = next()
-			log({
+			logTraceEvent({
 				system: systemName(execution.system),
 				depth: execution.depth,
 				durationMs: now() - startedAt,
@@ -31,7 +29,7 @@ export function createTracingMiddleware({
 			})
 			return result
 		} catch (error) {
-			log({
+			logTraceEvent({
 				system: systemName(execution.system),
 				depth: execution.depth,
 				durationMs: now() - startedAt,
@@ -50,10 +48,6 @@ function currentTime(): number {
 	return globalThis.performance?.now() ?? Date.now()
 }
 
-function systemName(system: unknown): string {
-	if (typeof system !== "function") {
-		return "(anonymous)"
-	}
-
+function systemName(system: { readonly name?: string }): string {
 	return system.name || "(anonymous)"
 }

@@ -15,7 +15,6 @@ import {
 	createInvoiceApi,
 	createInvoiceQueryOptions,
 	createInvoiceWorkspace,
-	type InvoiceApi,
 	type InvoiceQueryOptions,
 	type InvoiceWorkspace,
 	startInvoiceQueryBridge,
@@ -30,9 +29,7 @@ export interface CreateInvoiceExampleInput {
 }
 
 export interface InvoiceExample {
-	readonly apiBaseUrl: URL
 	readonly approvalApi: InvoiceApprovalApi
-	readonly invoiceApi: InvoiceApi
 	readonly queryClient: QueryClient
 	readonly queryOptions: InvoiceQueryOptions
 	readonly workspace: InvoiceWorkspace
@@ -73,9 +70,7 @@ export function createInvoiceExample({
 	let disposed = false
 
 	return {
-		apiBaseUrl,
 		approvalApi,
-		invoiceApi,
 		queryClient,
 		queryOptions,
 		workspace,

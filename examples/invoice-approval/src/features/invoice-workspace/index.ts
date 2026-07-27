@@ -1,6 +1,5 @@
 export {
 	createInvoiceApi,
-	type InvoiceApi,
 	type InvoiceDto,
 	type InvoiceListResponse,
 } from "./api"
