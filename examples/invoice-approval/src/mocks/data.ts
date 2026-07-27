@@ -12,7 +12,7 @@ export interface MockInvoiceStore {
 	replaceInvoices(invoices: readonly InvoiceDto[]): void
 }
 
-export type MockInvoiceApprovalResult =
+type MockInvoiceApprovalResult =
 	| {
 			readonly ok: true
 			readonly invoice: InvoiceDto
@@ -23,7 +23,7 @@ export type MockInvoiceApprovalResult =
 			readonly error: MockInvoiceApprovalError
 	  }
 
-export interface MockInvoiceApprovalError {
+interface MockInvoiceApprovalError {
 	readonly message: string
 }
 

@@ -9,7 +9,7 @@ import { RenderableInvoices } from "./model"
 import type { InvoiceQueryOptions } from "./queries"
 import { invoiceQueryKey } from "./queries"
 
-export interface RenderApprovalControlsInput {
+interface RenderApprovalControlsInput {
 	readonly invoice: Entity
 	readonly invoiceNumber: string
 }
