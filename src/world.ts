@@ -31,6 +31,21 @@ export type System<Input = void, Output = void> = (
 	input: Input,
 ) => Output
 
+export interface SystemExecution<Input = unknown, Output = unknown> {
+	readonly system: System<Input, Output>
+	readonly input: Input
+	readonly depth: number
+}
+
+export type SystemMiddleware = <Input, Output>(
+	execution: SystemExecution<Input, Output>,
+	next: () => Output,
+) => Output
+
+export interface WorldOptions {
+	readonly middleware?: readonly SystemMiddleware[]
+}
+
 export type ComponentEntry<Token extends AnyComponentToken> = readonly [
 	component: Token,
 	value: ComponentInput<Token>,
@@ -112,15 +127,21 @@ class WorldState implements World {
 		AnyComponentToken,
 		Map<Entity, Set<() => void>>
 	>()
+	readonly #middleware: readonly SystemMiddleware[]
 	readonly #componentVersions = new Map<AnyComponentToken, number>()
 	readonly #exactVersions = new Map<AnyComponentToken, Map<Entity, number>>()
 
 	#nextEntity = 1
 	#version = 0
 	#batchDepth = 0
+	#executionDepth = 0
 	#notifying = false
 	#hasPendingChange = false
 	#pendingPairs = new Map<AnyComponentToken, Set<Entity>>()
+
+	constructor(options: WorldOptions = {}) {
+		this.#middleware = [...(options.middleware ?? [])]
+	}
 
 	create(): Entity {
 		return this.#mutate(() => {
@@ -339,16 +360,19 @@ class WorldState implements World {
 	run<Input, Output>(system: System<Input, Output>, input: Input): Output
 	run<Input, Output>(system: System<Input, Output>, input?: Input): Output {
 		this.#batchDepth += 1
+		const depth = this.#executionDepth
+		this.#executionDepth += 1
 		let result: Output | undefined
-		let systemError: unknown
-		let didSystemThrow = false
+		let executionError: unknown
+		let didExecutionThrow = false
 
 		try {
-			result = system(this, input as Input)
+			result = this.#runWithMiddleware(system, input as Input, depth)
 		} catch (error) {
-			didSystemThrow = true
-			systemError = error
+			didExecutionThrow = true
+			executionError = error
 		} finally {
+			this.#executionDepth -= 1
 			this.#batchDepth -= 1
 		}
 
@@ -363,14 +387,82 @@ class WorldState implements World {
 			}
 		}
 
-		if (didSystemThrow) {
-			throw systemError
+		if (didExecutionThrow) {
+			throw executionError
 		}
 		if (didNotificationThrow) {
 			throw notificationError
 		}
 
 		return result as Output
+	}
+
+	#runWithMiddleware<Input, Output>(
+		system: System<Input, Output>,
+		input: Input,
+		depth: number,
+	): Output {
+		return this.#runMiddleware(0, { system, input, depth })
+	}
+
+	#runMiddleware<Input, Output>(
+		index: number,
+		execution: SystemExecution<Input, Output>,
+	): Output {
+		const middleware = this.#middleware[index]
+		if (middleware === undefined) {
+			return execution.system(this, execution.input)
+		}
+
+		let nextCalls = 0
+		let nextResult: Output | undefined
+		let nextError: unknown
+		let didNextThrow = false
+		const next = (): Output => {
+			nextCalls += 1
+			if (nextCalls > 1) {
+				throw new Error("System middleware must call next() exactly once")
+			}
+
+			try {
+				nextResult = this.#runMiddleware(index + 1, execution)
+				return nextResult as Output
+			} catch (error) {
+				didNextThrow = true
+				nextError = error
+				throw error
+			}
+		}
+
+		let middlewareResult: Output | undefined
+		let middlewareError: unknown
+		let didMiddlewareThrow = false
+		try {
+			middlewareResult = middleware(execution, next)
+		} catch (error) {
+			didMiddlewareThrow = true
+			middlewareError = error
+		}
+
+		if (didMiddlewareThrow) {
+			if (didNextThrow && !Object.is(middlewareError, nextError)) {
+				throw nextError
+			}
+			throw middlewareError
+		}
+		if (nextCalls !== 1) {
+			throw new Error("System middleware must call next() exactly once")
+		}
+		if (didNextThrow) {
+			throw nextError
+		}
+		if (!Object.is(middlewareResult, nextResult)) {
+			throw new Error(
+				"System middleware must return the next() result unchanged",
+			)
+		}
+
+		return middlewareResult as Output
 	}
 
 	subscribe(listener: () => void, scope?: SubscriptionScope): () => void {
@@ -674,6 +766,6 @@ class WorldState implements World {
 	}
 }
 
-export function createWorld(): World {
-	return new WorldState()
+export function createWorld(options?: WorldOptions): World {
+	return new WorldState(options)
 }
