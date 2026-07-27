@@ -1,4 +1,4 @@
-import type { InvoiceDto } from "../invoice-workspace"
+import { type InvoiceDto, parseInvoiceDto } from "../invoice-workspace"
 
 const fallbackApprovalMessage = "Approval request failed"
 
@@ -37,7 +37,7 @@ export function createInvoiceApprovalApi(baseUrl: URL): InvoiceApprovalApi {
 				)
 			}
 
-			return response.json() as Promise<InvoiceDto>
+			return parseInvoiceDto(await response.json())
 		},
 	}
 }

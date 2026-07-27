@@ -274,6 +274,51 @@ describe("invoice approval mutation", () => {
 		fixture.queryClient.clear()
 	})
 
+	it("clears pending state and invalidates when applying a successful DTO fails", async () => {
+		const fixture = createMutationFixture()
+		const mismatchedInvoice = invoice({
+			id: "other-invoice",
+			status: "approved",
+			version: 2,
+			canApprove: false,
+		})
+
+		await expect(
+			submitInvoiceApproval({
+				api: {
+					async approveInvoice() {
+						return mismatchedInvoice
+					},
+				},
+				command: fixture.command,
+				queryClient: fixture.queryClient,
+				workspace: fixture.workspace,
+				world: fixture.world,
+			}),
+		).rejects.toThrow(
+			'Approval response id "other-invoice" did not match "invoice-1"',
+		)
+
+		expect(
+			fixture.world.get(fixture.invoiceEntity, PendingApproval),
+		).toBeUndefined()
+		expect(fixture.world.require(fixture.invoiceEntity, ApprovalError)).toEqual(
+			{
+				message: "Approval request failed",
+			},
+		)
+		expect(cachedInvoice(fixture.queryClient, "invoice-1")).toMatchObject({
+			status: "pending",
+			version: 1,
+			canApprove: true,
+		})
+		expect(
+			fixture.queryClient.getQueryState(invoiceQueryKey)?.isInvalidated,
+		).toBe(true)
+
+		fixture.queryClient.clear()
+	})
+
 	it("maps non-JSON and blank approval errors to the typed fallback message", async () => {
 		server.resetHandlers(
 			http.post(
@@ -301,6 +346,18 @@ describe("invoice approval mutation", () => {
 			message: "Approval request failed",
 			status: 502,
 		})
+	})
+
+	it("rejects malformed successful approval responses at the API boundary", async () => {
+		server.resetHandlers(
+			http.post(new URL("invoices/:invoiceId/approve", apiBaseUrl).href, () =>
+				HttpResponse.json({ id: "invoice-1" }),
+			),
+		)
+
+		await expect(
+			createInvoiceApprovalApi(apiBaseUrl).approveInvoice("invoice-1"),
+		).rejects.toThrow("Invalid invoice response")
 	})
 
 	it("invalidates after a stale successful DTO without regressing ECS or Query cache", async () => {

@@ -29,34 +29,31 @@ export async function submitInvoiceApproval({
 	workspace,
 	world,
 }: SubmitInvoiceApprovalInput): Promise<ApplyInvoiceApprovalSuccessResult> {
-	await queryClient.cancelQueries({ queryKey: invoiceQueryKey })
-
-	let approvedInvoice: InvoiceDto
 	try {
-		approvedInvoice = await api.approveInvoice(command.invoiceId)
+		await queryClient.cancelQueries({ queryKey: invoiceQueryKey })
+		const approvedInvoice = await api.approveInvoice(command.invoiceId)
+		const result = world.run(applyInvoiceApprovalSuccess, {
+			workspace,
+			command,
+			invoice: approvedInvoice,
+		})
+
+		if (result.applied) {
+			queryClient.setQueryData<InvoiceQueryData>(invoiceQueryKey, current =>
+				mergeApprovedInvoice(current, approvedInvoice),
+			)
+		}
+
+		return result
 	} catch (error) {
 		world.run(applyInvoiceApprovalFailure, {
 			command,
 			message: approvalFailureMessage(error),
 		})
-		await queryClient.invalidateQueries({ queryKey: invoiceQueryKey })
 		throw error
+	} finally {
+		await queryClient.invalidateQueries({ queryKey: invoiceQueryKey })
 	}
-
-	const result = world.run(applyInvoiceApprovalSuccess, {
-		workspace,
-		command,
-		invoice: approvedInvoice,
-	})
-
-	if (result.applied) {
-		queryClient.setQueryData<InvoiceQueryData>(invoiceQueryKey, current =>
-			mergeApprovedInvoice(current, approvedInvoice),
-		)
-	}
-
-	await queryClient.invalidateQueries({ queryKey: invoiceQueryKey })
-	return result
 }
 
 function mergeApprovedInvoice(

@@ -341,4 +341,23 @@ describe("invoice query bridge", () => {
 
 		queryClient.clear()
 	})
+
+	it("rejects malformed successful list responses at the API boundary", async () => {
+		server.resetHandlers(
+			http.get(new URL("invoices", apiBaseUrl).href, () =>
+				HttpResponse.json({
+					items: [{ id: "invoice-1" }],
+				}),
+			),
+		)
+		const queryClient = createQueryClient()
+		const queryOptions = createInvoiceQueryOptions(createInvoiceApi(apiBaseUrl))
+
+		await expect(queryClient.fetchQuery(queryOptions)).rejects.toThrow(
+			"Invalid invoice response",
+		)
+
+		expect(queryClient.getQueryData(queryOptions.queryKey)).toBeUndefined()
+		queryClient.clear()
+	})
 })
