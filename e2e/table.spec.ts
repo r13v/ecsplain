@@ -81,7 +81,7 @@ test("edits a cell in place and filters through ECS", async ({ page }) => {
 
 	const editor = page.getByTestId("cell-editor")
 	await expect(editor).toBeFocused()
-	await editor.fill("edited@example.com")
+	await editor.pressSequentially("edited@example.com")
 	await editor.press("Enter")
 
 	await expect(emailCell).toContainText("edited@example.com")
