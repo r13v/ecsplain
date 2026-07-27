@@ -1,1 +1,5 @@
 node_modules
+dist
+examples/*/dist
+playwright-report
+test-results
