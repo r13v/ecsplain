@@ -319,18 +319,18 @@ Completion requires all of the following:
 - Modify: `examples/invoice-approval/src/mocks/handlers.ts`
 - Create: `tests/invoice-approval-mutation.test.ts`
 
-- [ ] Write integration tests first for successful approval, HTTP 409 rejection, a stale successful DTO, and a GET started before approval that is aborted and cannot overwrite the POST result.
-- [ ] Define `createInvoiceApprovalApi(baseUrl: URL)`, a typed `InvoiceApprovalErrorResponse` with `message`, and an `InvoiceApiError` carrying the HTTP status and normalized message in the approval slice.
-- [ ] Implement the approval POST with the explicit API base URL, check `response.ok`, parse the success DTO, and throw `InvoiceApiError` for non-2xx responses including the MSW 409 body.
-- [ ] Before starting POST, await `queryClient.cancelQueries({ queryKey: invoiceQueryKey })`; consuming the query signal in Task 5 must abort an older GET rather than merely ignoring its result.
-- [ ] On success, run `applyInvoiceApprovalSuccess` first.
-- [ ] Update Query cache only when the ECS system returns `applied: true`, and use an immutable version-aware merge that never replaces a cached invoice with a lower or equal version.
-- [ ] Invalidate `["invoices"]` after every success for background verification, including a stale success that was not applied.
-- [ ] On error, run `applyInvoiceApprovalFailure` with `InvoiceApiError.message` or the fallback `"Approval request failed"` for unknown/network errors, then invalidate the query without applying an optimistic Query-cache value.
-- [ ] Ensure ECS alone owns and renders optimistic pending state; do not add Query-cache optimistic state or rollback.
-- [ ] Extend the shared MSW factory with an approval handler delayed by exactly `250 ms`: approve the first pending invoice by incrementing its version and removing capability, return typed HTTP 409 for the second, and keep the third already approved.
-- [ ] Assert UI state transitions or deferred request resolution in tests; do not assert elapsed milliseconds.
-- [ ] Run `npx vitest run tests/invoice-approval-mutation.test.ts`, `npm run typecheck`, and `npm run build:invoice`.
+- [x] Write integration tests first for successful approval, HTTP 409 rejection, a stale successful DTO, and a GET started before approval that is aborted and cannot overwrite the POST result.
+- [x] Define `createInvoiceApprovalApi(baseUrl: URL)`, a typed `InvoiceApprovalErrorResponse` with `message`, and an `InvoiceApiError` carrying the HTTP status and normalized message in the approval slice.
+- [x] Implement the approval POST with the explicit API base URL, check `response.ok`, parse the success DTO, and throw `InvoiceApiError` for non-2xx responses including the MSW 409 body.
+- [x] Before starting POST, await `queryClient.cancelQueries({ queryKey: invoiceQueryKey })`; consuming the query signal in Task 5 must abort an older GET rather than merely ignoring its result.
+- [x] On success, run `applyInvoiceApprovalSuccess` first.
+- [x] Update Query cache only when the ECS system returns `applied: true`, and use an immutable version-aware merge that never replaces a cached invoice with a lower or equal version.
+- [x] Invalidate `["invoices"]` after every success for background verification, including a stale success that was not applied.
+- [x] On error, run `applyInvoiceApprovalFailure` with `InvoiceApiError.message` or the fallback `"Approval request failed"` for unknown/network errors, then invalidate the query without applying an optimistic Query-cache value.
+- [x] Ensure ECS alone owns and renders optimistic pending state; do not add Query-cache optimistic state or rollback.
+- [x] Extend the shared MSW factory with an approval handler delayed by exactly `250 ms`: approve the first pending invoice by incrementing its version and removing capability, return typed HTTP 409 for the second, and keep the third already approved.
+- [x] Assert UI state transitions or deferred request resolution in tests; do not assert elapsed milliseconds.
+- [x] Run `npx vitest run tests/invoice-approval-mutation.test.ts`, `npm run typecheck`, and `npm run build:invoice`.
 
 ### Task 7: Compose the application and tracing middleware
 

@@ -5,20 +5,88 @@ import type {
 
 export interface MockInvoiceStore {
 	readonly listRequests: number
+	readonly approvalRequests: number
+	approveInvoice(invoiceId: string): MockInvoiceApprovalResult
 	currentInvoices(): readonly InvoiceDto[]
 	listInvoices(): InvoiceListResponse
 	replaceInvoices(invoices: readonly InvoiceDto[]): void
+}
+
+export type MockInvoiceApprovalResult =
+	| {
+			readonly ok: true
+			readonly invoice: InvoiceDto
+	  }
+	| {
+			readonly ok: false
+			readonly status: number
+			readonly error: MockInvoiceApprovalError
+	  }
+
+export interface MockInvoiceApprovalError {
+	readonly message: string
 }
 
 export function createMockInvoiceStore(
 	initialInvoices: readonly InvoiceDto[] = defaultMockInvoices,
 ): MockInvoiceStore {
 	let listRequests = 0
+	let approvalRequests = 0
 	let invoices = copyInvoices(initialInvoices)
 
 	return {
 		get listRequests() {
 			return listRequests
+		},
+		get approvalRequests() {
+			return approvalRequests
+		},
+		approveInvoice(invoiceId) {
+			approvalRequests += 1
+			const invoiceIndex = invoices.findIndex(
+				invoice => invoice.id === invoiceId,
+			)
+			const current = invoices[invoiceIndex]
+
+			if (current === undefined) {
+				return {
+					ok: false,
+					status: 404,
+					error: { message: `Invoice ${invoiceId} was not found` },
+				}
+			}
+
+			if (current.id === "invoice-2") {
+				return {
+					ok: false,
+					status: 409,
+					error: {
+						message: "Invoice INV-002 requires manual review before approval",
+					},
+				}
+			}
+
+			if (current.status !== "pending" || !current.canApprove) {
+				return {
+					ok: false,
+					status: 409,
+					error: {
+						message: `Invoice ${current.number} is no longer approvable`,
+					},
+				}
+			}
+
+			const approved: InvoiceDto = {
+				...current,
+				status: "approved",
+				version: current.version + 1,
+				canApprove: false,
+			}
+			invoices = invoices.map(invoice =>
+				invoice.id === invoiceId ? approved : invoice,
+			)
+
+			return { ok: true, invoice: { ...approved } }
 		},
 		currentInvoices() {
 			return copyInvoices(invoices)
