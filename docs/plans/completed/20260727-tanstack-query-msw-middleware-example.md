@@ -432,9 +432,9 @@ Completion requires all of the following:
 
 ### Task 11: Final documentation state
 
-- [ ] Update this plan with any scope changes discovered during implementation.
-- [ ] Mark every completed task immediately after its validation command passes.
-- [ ] Move this file to `docs/plans/completed/20260727-tanstack-query-msw-middleware-example.md` only after all acceptance criteria pass.
+- [x] Update this plan with any scope changes discovered during implementation. (No additional scope changes discovered in the final pass.)
+- [x] Mark every completed task immediately after its validation command passes.
+- [x] Move this file to `docs/plans/completed/20260727-tanstack-query-msw-middleware-example.md` only after all acceptance criteria pass.
 
 ## Technical Details
 
