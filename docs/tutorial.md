@@ -8,9 +8,8 @@ ideas to three complete UI examples:
 3. an invoice approval workspace with TanStack Query, MSW, optimistic ECS state,
    and monotonic server reconciliation.
 
-It then extends those patterns to async data, CRUD, optimistic updates,
-notifications, overlays, drag-and-drop, async validation, ownership, routing,
-and permissions.
+It then extends those patterns to CRUD, optimistic updates, notifications,
+overlays, drag-and-drop, async validation, ownership, routing, and permissions.
 
 The goal is not to turn browser UI into a game engine. The goal is to use
 entities, passive data, and explicit systems to make application state easier
@@ -20,18 +19,16 @@ to compose and test.
 
 - **Foundations, sections 1–6:** build a world, query it, write systems, and
   connect scoped React subscriptions.
-- **Complete examples, sections 7–8:** study the table and dynamic form in the
-  repository; section 9 links to the runnable invoice approval companion.
-- **Application scenarios, sections 9–18:** reuse those patterns for common
+- **Complete examples, sections 7–9:** study the table, dynamic form, and
+  invoice approval workspace in the repository.
+- **Application scenarios, sections 10–18:** reuse those patterns for common
   frontend architecture problems.
 - **Practice, sections 19–22:** collect recipes, test behavior, understand
   limits, and continue with exercises.
 
-Sections 7–8 are complete runnable repository examples. Section 9 includes a
-concise blueprint and points to the runnable invoice approval example for the
-full TanStack Query and MSW version. Sections 10–18 are focused blueprints:
-they show component models, system boundaries, and critical invariants without
-adding ten separate demo applications.
+Sections 7–9 are complete runnable repository examples. Sections 10–18 are
+focused blueprints: they show component models, system boundaries, and critical
+invariants without adding nine separate demo applications.
 
 ## 1. The mental model
 
@@ -274,6 +271,43 @@ const selectOnly: System<{ readonly entity: Entity }> = (
 
 `world.run` batches nested changes. Subscribers observe one completed batch
 instead of every intermediate write.
+
+### Observe explicitly-run systems with middleware
+
+`createWorld` accepts synchronous observing middleware around every
+`world.run`, including nested runs:
+
+```ts
+import type { SystemMiddleware } from "ecsplain"
+
+const trace: SystemMiddleware = (execution, next) => {
+	const startedAt = performance.now()
+
+	try {
+		return next()
+	} finally {
+		console.info("ecsplain:system", {
+			system: execution.system.name,
+			depth: execution.depth,
+			durationMs: performance.now() - startedAt,
+		})
+	}
+}
+
+const tracedWorld = createWorld({ middleware: [trace] })
+```
+
+Registration order is outside-in, and `depth` is zero-based: an entry system
+has depth `0`, while a system it runs directly has depth `1`. Middleware must
+call `next()` exactly once, return its exact result, and rethrow its exact error.
+It cannot skip a system, replace its input or output, turn execution async, or
+provide rollback. Subscriber notification happens after the outer middleware
+chain finishes.
+
+Treat `Function.name` as diagnostic only because a bundler may change it.
+Tracing should not log raw system input by default; application input can
+contain sensitive data. The full rationale and contract are recorded in
+[ADR 0003](./adr/0003-synchronous-observing-system-middleware.md).
 
 ### Errors do not roll changes back
 
@@ -711,130 +745,137 @@ Inactive values are preserved in the world but excluded from validation and
 submission. Structure, validation, and serialization all use the same
 `ActiveField` rule.
 
-## 9. Scenario: load server data
+## 9. Complete example: approve invoices with server data
 
-The core ECS API is synchronous, while frontend applications regularly call
-HTTP APIs. Keep that boundary explicit:
+Run the third complete example:
 
-- an async controller owns `fetch`, cancellation, and decoding;
-- synchronous systems describe request state transitions;
-- React renders request components.
-
-### Model the request lifecycle
-
-Store request state on a stable feature entity:
-
-```ts
-type RequestPhase = "idle" | "loading" | "success" | "error"
-
-interface RequestStateData {
-	readonly phase: RequestPhase
-	readonly requestId: string | null
-	readonly error: string | null
-}
-
-const RequestState = defineComponent<RequestStateData>("RequestState")
+```sh
+npm run dev:invoice
 ```
 
-The request ID distinguishes the latest request from an older response that
-arrives late.
+The source is in
+[`examples/invoice-approval`](../examples/invoice-approval). Use
+`?variant=review` to require confirmation before approval, or `?approval=off`
+to open a read-only workspace.
+
+The core ECS API remains synchronous even though the workspace loads and
+updates invoices over HTTP. The example keeps that boundary explicit by giving
+each kind of state one owner:
+
+| State | Owner |
+| --- | --- |
+| Fetch status, cancellation, stale time, and remote cache | TanStack Query |
+| Invoice working-set projection and approval workflow | ECSplain |
+| Delayed mock responses and server versions | MSW |
+
+TanStack Query is the only HTTP cache. ECS does not copy Query's loading or
+retry state; it stores the invoice snapshots that synchronous systems need,
+plus local review, pending, error, capability, and rollout components.
+
+### Reconcile one query into the ECS working set
+
+The application creates one Query options object. React uses it to render
+loading and refresh state, while a query-specific `QueryObserver` bridges
+successful data into ECS:
 
 ```ts
-const startRequest: System<{
-	readonly feature: Entity
-	readonly requestId: string
-}> = (world, { feature, requestId }) => {
-	world.set(feature, RequestState, {
-		phase: "loading",
-		requestId,
-		error: null,
-	})
-}
-```
+const observer = new QueryObserver(queryClient, queryOptions)
 
-Success and failure systems first verify the ID:
-
-```ts
-const failRequest: System<{
-	readonly feature: Entity
-	readonly requestId: string
-	readonly message: string
-}> = (world, input) => {
-	const current = world.get(input.feature, RequestState)
-
-	if (current?.requestId !== input.requestId) {
-		return
-	}
-
-	world.set(input.feature, RequestState, {
-		phase: "error",
-		requestId: input.requestId,
-		error: input.message,
-	})
-}
-```
-
-Ignoring a stale result is usually safer than allowing an older search request
-to overwrite a newer one.
-
-### Keep the async effect outside the system
-
-An application controller coordinates the side effect:
-
-```ts
-async function loadUsers(world: World, feature: Entity): Promise<void> {
-	const requestId = crypto.randomUUID()
-	world.run(startRequest, { feature, requestId })
-
-	try {
-		const response = await fetch("/api/users")
-		if (!response.ok) {
-			throw new Error(`Request failed with ${response.status}`)
-		}
-
-		const users = (await response.json()) as readonly UserRowData[]
-		world.run(receiveUsers, { feature, requestId, users })
-	} catch (error) {
-		world.run(failRequest, {
-			feature,
-			requestId,
-			message: error instanceof Error ? error.message : "Unknown error",
+const unsubscribe = observer.subscribe(result => {
+	if (result.isSuccess) {
+		world.run(reconcileInvoices, {
+			workspace,
+			response: result.data,
 		})
 	}
+})
+```
+
+The real bridge also applies an already-successful current result and skips an
+identical data reference. It observes only the invoice query rather than
+mirroring the complete Query cache. React and the bridge share the same Query
+options, so TanStack Query deduplicates their initial request.
+
+### Accept only a newer server version
+
+Every server-visible invoice change increments a per-invoice `version`.
+`applyInvoiceSnapshot` is the single ECS gate for list and mutation responses:
+
+```ts
+const current = world.get(entity, InvoiceSnapshot)
+
+if (current !== undefined && invoice.version <= current.version) {
+	return { entity, applied: false }
+}
+
+world.set(entity, InvoiceSnapshot, toInvoiceSnapshot(invoice))
+syncCanApprove(world, entity, invoice.canApprove)
+return { entity, applied: true }
+```
+
+The workspace locates entities through a unique `InvoiceId` secondary index.
+An older or duplicate response cannot regress the snapshot or its
+`CanApprove` capability. Reconciliation changes only workspace-owned snapshot
+components, so local `ApprovalReview`, `PendingApproval`, and `ApprovalError`
+state survives a background refresh.
+
+### Let ECS own optimistic workflow state
+
+A React handler first runs a synchronous approval system. The system validates
+the session rollout, current server status, `CanApprove`, and duplicate pending
+state. It then attaches `PendingApproval` or opens `ApprovalReview` and returns
+a plain command for the async adapter:
+
+```ts
+const command = world.run(requestInvoiceApproval, {
+	workspace: workspaceEntity,
+	invoice,
+})
+
+if (command !== undefined) {
+	await submitInvoiceApproval({
+		api: approvalApi,
+		command,
+		queryClient,
+		workspace,
+		world,
+	})
 }
 ```
 
-`receiveUsers` is synchronous: it verifies `requestId`, creates or updates row
-entities, rebuilds the derived view, and marks the request successful in one
-batch.
+ECS is the only owner of optimistic UI. The Query cache is not optimistically
+changed and therefore needs no rollback. A successful POST is applied to ECS
+first; only when the version gate accepts it does the adapter merge it into the
+Query cache. A failure clears pending state, preserves the accepted snapshot,
+and attaches the normalized server message.
 
-An `AbortController` can prevent unnecessary network work, but request IDs are
-still useful because cancellation and response delivery can race.
+### Make races explicit at the remote boundary
 
-### Render request state, not Promise state
+Before sending the approval POST, the adapter cancels the active invoice query.
+The query function passes TanStack Query's `AbortSignal` to `fetch`, so a
+delayed GET from the previous server state is aborted. Both the ECS projection
+and the Query-cache merge independently reject equal or lower versions.
 
-React subscribes to the feature entity:
+Success and failure both invalidate the invoice query after local handling.
+That background request verifies the final server state while cached ECS rows
+remain visible. There is no transaction across `QueryClient` and the World;
+ordering and monotonic versions provide the consistency rule.
 
-```tsx
-const request = useComponent(feature, RequestState)
+### Compose flags, effects, and tracing at the application root
 
-if (request?.phase === "loading") {
-	return <LoadingIndicator />
-}
+The application root resolves the approval flag and direct/review variant from
+the URL once, then constructs one World, QueryClient, unique index, query
+bridge, API pair, and disposal function. Feature slices receive these
+dependencies rather than reading browser globals.
 
-if (request?.phase === "error") {
-	return <RetryPanel message={request.error ?? "Request failed"} />
-}
-```
+The same root installs synchronous observing middleware for system tracing.
+It records diagnostic system name, nesting depth, duration, and outcome without
+logging invoice inputs. MSW starts before the query observer and React render,
+so the browser example and Vitest integration tests reuse the same request
+handlers without a real backend.
 
-This pattern applies to initial loading, search suggestions, pagination, and
-background refresh. A test can call the transition systems directly without
-mocking `fetch`; a separate controller test verifies effect orchestration.
-
-For a runnable version of this boundary with TanStack Query as the HTTP cache,
-MSW as the mock server, query cancellation, monotonic server versions, and
-ECS-owned optimistic approval state, see the
-[invoice approval example](../examples/invoice-approval).
+See the [example README](../examples/invoice-approval/README.md) for the
+vertical-slice dependency direction, endpoints, and detailed approval flow.
 
 ## 10. Scenario: build a master-detail CRUD screen
 

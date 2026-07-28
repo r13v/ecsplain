@@ -12,9 +12,14 @@ if (rootElement === null) {
 	throw new Error("The invoice approval example requires a #root element")
 }
 
-const apiBaseUrl = new URL("/api/", window.location.origin)
+const exampleBaseUrl = new URL(import.meta.env.BASE_URL, window.location.origin)
+const apiBaseUrl = new URL("api/", exampleBaseUrl)
+const serviceWorkerUrl = new URL("mockServiceWorker.js", exampleBaseUrl)
 const { startInvoiceMockWorker } = await import("./mocks/browser")
-const stopMockWorker = await startInvoiceMockWorker(apiBaseUrl)
+const stopMockWorker = await startInvoiceMockWorker(
+	apiBaseUrl,
+	serviceWorkerUrl,
+)
 const example = createInvoiceExample({
 	apiBaseUrl,
 	config: resolveInvoiceExampleConfig(new URL(window.location.href)),

@@ -827,7 +827,7 @@ a {
 
 .related-examples {
 	display: grid;
-	grid-template-columns: minmax(11rem, 0.8fr) repeat(2, minmax(15rem, 1fr));
+	grid-template-columns: minmax(9rem, 0.7fr) repeat(3, minmax(12rem, 1fr));
 	border-bottom: 1px solid var(--line);
 	padding: 22px clamp(32px, 4vw, 54px);
 }
@@ -918,7 +918,7 @@ a {
 	}
 
 	.related-examples {
-		grid-template-columns: 1fr 1fr;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
 		gap: 16px;
 	}
 

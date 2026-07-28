@@ -27,11 +27,11 @@ npm install ecsplain
 ## Learn
 
 Start with the [progressive tutorial](./docs/tutorial.md). It introduces the
-core API from an empty world, connects it to React, and then develops the table
-and dynamic-form examples as reusable application patterns. The second half
-covers async data, CRUD, optimistic updates, notifications, overlays,
-drag-and-drop, async validation, multiple feature ownership, routing, and
-permissions.
+core API from an empty world, connects it to React, and then develops the table,
+dynamic-form, and invoice-approval examples as reusable application patterns.
+The remaining scenarios cover CRUD, optimistic updates, notifications,
+overlays, drag-and-drop, async validation, multiple feature ownership, routing,
+and permissions.
 
 ## Core API
 

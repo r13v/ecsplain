@@ -28,7 +28,7 @@ export default defineConfig({
 		},
 		{
 			command:
-				"npm run dev:invoice -- --host 127.0.0.1 --port 4175 --strictPort",
+				"npm run dev:invoice -- --base=/ecsplain/examples/invoice-approval/ --host 127.0.0.1 --port 4175 --strictPort",
 			port: 4175,
 			reuseExistingServer: !process.env.CI,
 		},

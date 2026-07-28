@@ -36,6 +36,7 @@ jobs:
         run: |
           npx vite build examples/table --config vite.config.ts --base=/ecsplain/examples/table/
           npx vite build examples/dynamic-form --config vite.config.ts --base=/ecsplain/examples/dynamic-form/
+          npx vite build examples/invoice-approval --config vite.config.ts --base=/ecsplain/examples/invoice-approval/
 
       - name: Install documentation dependencies
         working-directory: docs-site
@@ -51,8 +52,10 @@ jobs:
         run: |
           mkdir -p docs-site/dist/client/examples/table
           mkdir -p docs-site/dist/client/examples/dynamic-form
+          mkdir -p docs-site/dist/client/examples/invoice-approval
           cp -R examples/table/dist/. docs-site/dist/client/examples/table/
           cp -R examples/dynamic-form/dist/. docs-site/dist/client/examples/dynamic-form/
+          cp -R examples/invoice-approval/dist/. docs-site/dist/client/examples/invoice-approval/
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
