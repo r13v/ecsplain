@@ -178,7 +178,7 @@ export const ui = {
 		openDemo: "Open live example",
 	},
 	ru: {
-		docs: "Документация",
+		docs: "Дока",
 		search: "Поиск по документации…",
 		searchResults: "Подходящие главы",
 		github: "GitHub",
