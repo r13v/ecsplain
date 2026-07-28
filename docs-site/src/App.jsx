@@ -11,6 +11,7 @@ import {
 	List,
 	MagnifyingGlass,
 	Play,
+	Receipt,
 	Table,
 	X,
 } from "@phosphor-icons/react"
@@ -24,6 +25,7 @@ const githubUrl = "https://github.com/r13v/ecsplain"
 const demoPaths = {
 	table: "examples/table/",
 	"dynamic-form": "examples/dynamic-form/",
+	"async-data": "examples/invoice-approval/",
 }
 
 function readRoute() {
@@ -416,6 +418,14 @@ function RelatedExamples({ copy, locale }) {
 				<div>
 					<strong>{copy.form}</strong>
 					<small>{copy.formCaption}</small>
+				</div>
+				<ArrowRight size={18} />
+			</a>
+			<a href={`#/${locale}/async-data`}>
+				<Receipt size={21} />
+				<div>
+					<strong>{copy.invoice}</strong>
+					<small>{copy.invoiceCaption}</small>
 				</div>
 				<ArrowRight size={18} />
 			</a>

@@ -1,6 +1,6 @@
 import { expect, type Page, test } from "@playwright/test"
 
-const invoiceUrl = "http://127.0.0.1:4175"
+const invoiceUrl = "http://127.0.0.1:4175/ecsplain/examples/invoice-approval/"
 
 function invoiceRow(page: Page, invoiceNumber: string) {
 	return page.getByTestId(`invoice-row-${invoiceNumber}`)
@@ -12,7 +12,7 @@ async function expectInvoiceRow(page: Page, invoiceNumber: string) {
 	return row
 }
 
-test("loads invoices and keeps cached rows visible during manual refresh", async ({
+test("loads invoices from the Pages base path and keeps cached rows visible during manual refresh", async ({
 	page,
 }) => {
 	await page.goto(invoiceUrl)

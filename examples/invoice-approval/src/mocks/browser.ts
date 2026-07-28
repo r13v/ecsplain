@@ -4,6 +4,7 @@ import { createInvoiceHandlers } from "./handlers"
 
 export async function startInvoiceMockWorker(
 	baseUrl: URL,
+	serviceWorkerUrl: URL,
 ): Promise<() => void> {
 	const worker = setupWorker(
 		...createInvoiceHandlers({
@@ -15,7 +16,7 @@ export async function startInvoiceMockWorker(
 	await worker.start({
 		onUnhandledRequest: "error",
 		serviceWorker: {
-			url: "/mockServiceWorker.js",
+			url: serviceWorkerUrl.href,
 		},
 	})
 

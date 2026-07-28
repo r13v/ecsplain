@@ -32,18 +32,18 @@ export const groups = [
 				en: "Dynamic form",
 				ru: "Динамическая форма",
 			},
+			{
+				id: "async-data",
+				number: "09",
+				en: "Invoice approval",
+				ru: "Согласование счетов",
+			},
 		],
 	},
 	{
 		id: "scenarios",
 		title: { en: "Application scenarios", ru: "Прикладные сценарии" },
 		items: [
-			{
-				id: "async-data",
-				number: "09",
-				en: "Async server data",
-				ru: "Асинхронные данные",
-			},
 			{
 				id: "crud",
 				number: "10",
@@ -162,6 +162,9 @@ export const ui = {
 		tableCaption: "Filtering, sorting, range selection, and in-place editing.",
 		form: "Dynamic form",
 		formCaption: "Active fields, branch preservation, and validation.",
+		invoice: "Invoice approval",
+		invoiceCaption:
+			"TanStack Query, monotonic reconciliation, and optimistic workflow state.",
 		menu: "Open curriculum",
 		close: "Close curriculum",
 		noResults: "No chapters match this search.",
@@ -202,6 +205,9 @@ export const ui = {
 			"Фильтрация, сортировка, выделение диапазона и редактирование.",
 		form: "Динамическая форма",
 		formCaption: "Активные поля, сохранение веток и валидация.",
+		invoice: "Согласование счетов",
+		invoiceCaption:
+			"TanStack Query, монотонная сверка и оптимистичное состояние workflow.",
 		menu: "Открыть содержание",
 		close: "Закрыть содержание",
 		noResults: "По вашему запросу ничего не найдено.",
@@ -414,6 +420,7 @@ for (const [row, data, selected] of world.query(
 			paragraphs: [
 				"The system below toggles a marker component on one cell entity. Saved row data and unrelated entities are untouched.",
 				"Nested writes share one world.run batch, so React observes one completed state transition rather than intermediate steps.",
+				"Synchronous observing middleware can trace every explicit world.run, including nested systems, without replacing inputs, results, errors, or execution order.",
 			],
 			takeaways: [
 				"Systems receive plain typed inputs.",
@@ -444,6 +451,7 @@ world.run(toggleSelection, { cell: e2 })`,
 			paragraphs: [
 				"Система переключает marker component на одной cell entity. Сохранённые данные строки и остальные entities не затрагиваются.",
 				"Вложенные записи входят в один world.run batch, поэтому React видит завершённый переход, а не промежуточные состояния.",
+				"Синхронный observing middleware может трассировать каждый явный world.run, включая вложенные системы, не заменяя inputs, results, errors или порядок выполнения.",
 			],
 			takeaways: [
 				"Системы получают простые типизированные inputs.",
@@ -564,24 +572,27 @@ for (const [field, branch, active] of world.query(Branches)) {
 	},
 	"async-data": {
 		en: [
-			"Keep fetch and AbortController in an async adapter. Synchronous systems own loading, success, and error transitions.",
-			"Store a requestId and ignore late responses whose ID no longer matches the active request.",
+			"TanStack Query owns fetch status and the remote cache. A query-specific observer reconciles successful invoice snapshots into an ECS working set for synchronous systems.",
+			"ECS alone owns review, pending, and approval-error state. Reconciliation touches only server projections, so a background refresh cannot erase transient workflow state.",
+			"Query cancellation and strictly increasing server versions prevent delayed GET or mutation responses from regressing either the Query cache or ECS projection.",
 		],
 		ru: [
-			"Оставляйте fetch и AbortController в async adapter. Синхронные системы управляют loading, success и error transitions.",
-			"Храните requestId и игнорируйте поздние ответы, чей ID больше не совпадает с активным запросом.",
+			"TanStack Query владеет fetch status и remote cache. Query-specific observer сверяет успешные invoice snapshots с ECS working set для синхронных систем.",
+			"Только ECS владеет review, pending и approval-error state. Сверка меняет лишь server projections, поэтому background refresh не стирает временный workflow state.",
+			"Отмена Query и строго возрастающие server versions не позволяют запоздалым GET или mutation responses откатить Query cache либо ECS projection.",
 		],
-		code: `const receiveUsers: System<ResponseInput> = (world, input) => {
-  const request = world.get(input.feature, RequestState)
-  if (request?.requestId !== input.requestId) return
+		code: `const current = world.get(entity, InvoiceSnapshot)
 
-  world.run(replaceUsers, input.users)
-  world.set(input.feature, RequestState, {
-    phase: "success",
-    requestId: input.requestId,
-    error: null,
-  })
-}`,
+if (
+  current !== undefined &&
+  invoice.version <= current.version
+) {
+  return { entity, applied: false }
+}
+
+world.set(entity, InvoiceSnapshot, toInvoiceSnapshot(invoice))
+syncCanApprove(world, entity, invoice.canApprove)
+return { entity, applied: true }`,
 	},
 	crud: {
 		en: [
@@ -816,8 +827,8 @@ const scenarioTitles = {
 		"Структура — это ещё один query",
 	],
 	"async-data": [
-		"Keep asynchronous effects at the boundary",
-		"Оставляйте async effects на границе",
+		"Reconcile server data without losing workflow state",
+		"Сверяйте серверные данные без потери workflow state",
 	],
 	crud: [
 		"Normalize records, drafts, and relationships",
@@ -874,17 +885,21 @@ const scenarioTitles = {
 }
 
 for (const [id, scenario] of Object.entries(scenarioLessons)) {
+	const isCompleteExample =
+		id === "table" || id === "dynamic-form" || id === "async-data"
+	const isPractice =
+		id === "recipes" ||
+		id === "testing" ||
+		id === "boundaries" ||
+		id === "exercises"
+
 	lessons[id] = {
 		en: {
-			eyebrow:
-				id === "table" || id === "dynamic-form"
-					? "Complete example"
-					: id === "recipes" ||
-							id === "testing" ||
-							id === "boundaries" ||
-							id === "exercises"
-						? "Practice"
-						: "Application scenario",
+			eyebrow: isCompleteExample
+				? "Complete example"
+				: isPractice
+					? "Practice"
+					: "Application scenario",
 			title: scenarioTitles[id][0],
 			subtitle: scenario.en[0],
 			paragraphs: scenario.en,
@@ -892,15 +907,11 @@ for (const [id, scenario] of Object.entries(scenarioLessons)) {
 			code: scenario.code,
 		},
 		ru: {
-			eyebrow:
-				id === "table" || id === "dynamic-form"
-					? "Готовый пример"
-					: id === "recipes" ||
-							id === "testing" ||
-							id === "boundaries" ||
-							id === "exercises"
-						? "Практика"
-						: "Прикладной сценарий",
+			eyebrow: isCompleteExample
+				? "Готовый пример"
+				: isPractice
+					? "Практика"
+					: "Прикладной сценарий",
 			title: scenarioTitles[id][1],
 			subtitle: scenario.ru[0],
 			paragraphs: scenario.ru,
